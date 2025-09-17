@@ -13,7 +13,7 @@ export default function ErrorDialog({ open, title = "เกิดข้อผิ
           onClick={onClose}
         >
           <motion.div
-            className="mx-auto mt-24 w-[min(92vw,520px)] rounded-2xl border border-red-200 bg-white p-5 shadow-xl dark:border-red-900/40 dark:bg-neutral-950"
+            className="absolute left-1/2 top-1/2 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-red-200 bg-white p-5 shadow-xl dark:border-red-900/40 dark:bg-neutral-950"
             initial={{ y: 12, opacity: 0, scale: 0.98 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 8, opacity: 0, scale: 0.98 }}

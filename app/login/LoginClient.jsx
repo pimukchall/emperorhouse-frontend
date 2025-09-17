@@ -36,7 +36,7 @@ export default function LoginClient() {
   }
 
   return (
-    <main className="relative flex min-h-[calc(100vh-64px)] items-center justify-center px-4 py-10">
+    <main className="relative flex min-h-screen items-center justify-center">
       <BackgroundLines className="fixed inset-0 -z-10" />
 
       <BackgroundGradient className="mx-auto w-full max-w-md rounded-2xl border border-neutral-200 p-6 shadow-lg dark:border-neutral-800 bg-white dark:bg-neutral-950">

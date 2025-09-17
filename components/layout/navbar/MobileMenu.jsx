@@ -11,6 +11,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/providers/local-auth";
+import { isRole } from "@/providers/local-auth";
 
 function Group({ id, label, Icon, open, onToggle, items, onItemClick }) {
   return (
@@ -20,7 +21,7 @@ function Group({ id, label, Icon, open, onToggle, items, onItemClick }) {
         aria-expanded={open}
         aria-controls={`${id}-group`}
         onClick={onToggle}
-        className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left text-gray-700 hover:bg-black/5 dark:text-gray-300 dark:hover:bg_WHITE/5"
+        className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left text-gray-700 hover:bg-black/5 dark:text-gray-300 dark:hover:bg-white/5"
       >
         <span className="flex items-center gap-3">
           <Icon className="h-5 w-5" />
@@ -45,7 +46,7 @@ function Group({ id, label, Icon, open, onToggle, items, onItemClick }) {
                   key={it.href}
                   href={it.href}
                   onClick={onItemClick}
-                  className="flex items-center gap-3 rounded-md px-3 py-2.5 text-gray-700 hover:bg-black/5 dark:text-gray-300 dark:hover:bg_WHITE/5"
+                  className="flex items-center gap-3 rounded-md px-3 py-2.5 text-gray-700 hover:bg-black/5 dark:text-gray-300 dark:hover:bg-white/5"
                 >
                   <it.icon className="h-5 w-5" />
                   {it.label}
@@ -69,10 +70,10 @@ export function MobileMenu({ open, onClose }) {
 
   if (!open) return null;
 
-  const roles = user?.roles ?? [];
-  const isHrManager = roles.some((r) => /^(hr\.manager)$/i.test(r));
-  const isHrHrm = roles.some((r) => /^(hr\.hrm)$/i.test(r));
-  const isAdmin = roles.some((r) => /^(admin)$/i.test(r));
+  // เช็คจาก DB role.name
+  const isHrManager = isRole(user, "hr.manager");
+  const isHrHrm = isRole(user, "hr.hrm");
+  const isAdmin = isRole(user, "admin");
 
   const base = [
     { label: "Home", href: "/", icon: Home },
@@ -104,7 +105,7 @@ export function MobileMenu({ open, onClose }) {
         animate={{ opacity: 1, height: "auto", y: 0 }}
         exit={{ opacity: 0, height: 0, y: -6 }}
         transition={{ duration: 0.22 }}
-        className="lg:hidden overflow-hidden bg-white dark:bg-neutral-900 shadow-xl border border-black/10 dark:border_WHITE/10 rounded-2xl mx-3 mt-2"
+        className="lg:hidden overflow-hidden bg-white dark:bg-neutral-900 shadow-xl border border-black/10 dark:border-white/10 rounded-2xl mx-3 mt-2"
       >
         <div className="flex flex-col p-4 gap-1">
           {base.map((item) => (
@@ -135,21 +136,21 @@ export function MobileMenu({ open, onClose }) {
             />
           )}
 
-          <div className="my-2 h-px bg-black/10 dark:bg_WHITE/10" />
+          <div className="my-2 h-px bg-black/10 dark:bg-white/10" />
 
           <div className="mt-2 space-y-3">
-            <div className="flex flex-col gap-3 rounded-xl bg-black/5 px-3 py-2 dark:bg_WHITE/5">
+            <div className="flex flex-col gap-3 rounded-xl bg-black/5 px-3 py-2 dark:bg-white/5">
               {user && (
                 <div className="flex items-center gap-3">
                   <AvatarButton
                     name={user.name}
                     email={user.email}
-                    photo={user.photo}
+                    userId={user.id}
                     onClick={onClose}
                   />
                   <div className="min-w-0">
                     <Link
-                      href="/account"
+                      href="/profile"
                       onClick={onClose}
                       className="block truncate text-sm font-medium text-gray-900 hover:underline dark:text-gray-100"
                     >
@@ -165,12 +166,17 @@ export function MobileMenu({ open, onClose }) {
               </div>
 
               {loading ? (
-                <div className="h-9 w-full animate-pulse rounded-full bg-black/10 dark:bg_WHITE/10" />
+                <div className="h-9 w-full animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
               ) : user ? (
                 <StatefulButton
                   className="h-9 w-full rounded-full"
                   loadingText="Signing out..."
-                  onClick={() => signOut().then(() => { onClose(); router.push("/login"); })}
+                  onClick={() =>
+                    signOut().then(() => {
+                      onClose();
+                      router.push("/login");
+                    })
+                  }
                 >
                   Sign Out
                 </StatefulButton>

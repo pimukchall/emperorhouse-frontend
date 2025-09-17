@@ -123,7 +123,7 @@ function DevDropdown(){
       <div
         id={menuId}
         role="menu"
-        className={`absolute left-0 z-50 mt-2 min-w-[180px] rounded-xl border bg-white shadow-lg ring-1 ring-black/5 dark:bg-neutral-900 dark:border_WHITE/10 dark:ring-white/10 transition-all duration-150
+        className={`absolute left-0 z-50 mt-2 min-w-[180px] rounded-xl border bg-white shadow-lg ring-1 ring-black/5 dark:bg-neutral-900 dark:border-white/10 dark:ring-white/10 transition-all duration-150
         ${open ? "opacity-100 translate-y-0" : "pointer-events-none -translate-y-1 opacity-0"}`}
       >
         <DropdownItem href="/dev/worklog" icon={NotebookPen} label="Daily report" />
@@ -137,7 +137,7 @@ function DropdownItem({ href, icon: Icon, label, onClick }) {
     <Link
       href={href}
       role="menuitem"
-      className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-800 hover:bg-neutral-50 focus:bg-neutral-50 focus:outline-none dark:text-neutral-200 dark:hover:bg-white/5 dark:focus:bg_WHITE/5"
+      className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-800 hover:bg-neutral-50 focus:bg-neutral-50 focus:outline-none dark:text-neutral-200 dark:hover:bg-white/5 dark:focus:bg-white/5"
       onClick={onClick}
     >
       <Icon className="h-4 w-4" />

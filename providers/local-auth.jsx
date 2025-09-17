@@ -12,37 +12,41 @@ import { apiFetch } from "@/lib/api";
 
 const AuthCtx = createContext(null);
 
-function normalizeRoles(input) {
-  if (!input) return [];
-  if (Array.isArray(input)) return input.map(String);
-  if (typeof input === "string") {
-    return input
-      .split(/[ ,;]/)
-      .map((r) => r.trim())
-      .filter(Boolean);
-  }
-  return [];
+// ---- Normalizers -------------------------------------------------
+function normalizeFromUser(u) {
+  const rn = (u?.role?.name || "").toLowerCase();              // "admin", "hr.manager"
+  const roles =
+    Array.isArray(u?.roles) && u.roles.length
+      ? u.roles.map((s) => String(s).toLowerCase())
+      : rn
+      ? [rn]
+      : [];
+
+  const dept = u?.department ?? null;                           // { id, code, nameTh, nameEn }
+  const departmentCode =
+    (dept?.code && String(dept.code).toLowerCase()) || null;
+  const departmentId = dept?.id ?? null;
+
+  return { roleName: rn, roles, department: dept, departmentCode, departmentId };
 }
 
+const toLower = (v) => String(v ?? "").toLowerCase();
+
+// ---- Provider ----------------------------------------------------
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null); // { id,name,email,photo?, roles:[], department? }
+  const [user, setUser] = useState(null); // { id,name,email,role,department,..., roleName, roles[], departmentCode, departmentId }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const loadMe = useCallback(async (signal) => {
     setError("");
     try {
-      // ส่ง signal ต่อไป apiFetch -> fetch
       const data = await apiFetch("/auth/me", { signal });
-      const roles = normalizeRoles(data?.user?.roles);
-      const department = data?.user?.department ?? null;
-      setUser(data?.user ? { ...data.user, roles, department } : null);
+      const norm = normalizeFromUser(data?.user);
+      setUser(data?.user ? { ...data.user, ...norm } : null);
     } catch (e) {
-      // ถ้าโดนยกเลิก ก็ไม่ต้องทำอะไร
       if (e?.name === "AbortError") return;
-      // ไม่ว่าเหตุผลไหน เคลียร์เป็น not-auth ไว้ก่อน
       setUser(null);
-      // เก็บข้อความ error แบบเบา ๆ เผื่อ UI อยากโชว์
       setError(e?.message || "");
     } finally {
       setLoading(false);
@@ -61,11 +65,8 @@ export function AuthProvider({ children }) {
       method: "POST",
       body: { email, password, remember },
     });
-    setUser({
-      ...data.user,
-      roles: normalizeRoles(data.user?.roles),
-      department: data.user?.department ?? null,
-    });
+    const norm = normalizeFromUser(data?.user);
+    setUser({ ...data.user, ...norm });
     return data;
   }, []);
 
@@ -74,7 +75,7 @@ export function AuthProvider({ children }) {
     try {
       await apiFetch("/auth/logout", { method: "POST" });
     } catch {
-      // เงียบ ๆ ได้ เพราะเราจะล้าง state อยู่แล้ว
+      // ignore
     } finally {
       setUser(null);
     }
@@ -107,12 +108,42 @@ export function useAuth() {
   return ctx;
 }
 
-// helpers สำหรับเช็คสิทธิ์
+// ---- Helpers: role / department checks ---------------------------
+
+// เดิม (compat)
 export function hasRole(user, roleName) {
-  return !!user?.roles?.some((r) => new RegExp(`^${roleName}$`, "i").test(r));
+  return isRole(user, roleName);
 }
 export function hasAnyRole(user, names = []) {
-  return !!user?.roles?.some((r) =>
-    names.some((n) => new RegExp(`^${n}$`, "i").test(r))
-  );
+  return isRole(user, ...names);
+}
+
+// ใหม่ (แนะนำใช้)
+export function isRole(user, ...names) {
+  const rn = toLower(user?.roleName || user?.role?.name);
+  if (!rn && !user?.roles?.length) return false;
+  return names.some((n) => {
+    const want = toLower(n);
+    return rn === want || (user?.roles || []).some((r) => toLower(r) === want);
+  });
+}
+
+export function inDepartment(user, ...codes) {
+  const code = toLower(user?.departmentCode || user?.department?.code);
+  if (!code) return false;
+  return codes.some((c) => code === toLower(c));
+}
+
+// เช็ค “ทั้ง role และ department” (AND)
+export function hasRoleAndDepartment(user, roleNames = [], deptCodes = []) {
+  const okRole = roleNames.length ? isRole(user, ...roleNames) : true;
+  const okDept = deptCodes.length ? inDepartment(user, ...deptCodes) : true;
+  return okRole && okDept;
+}
+
+// เช็ค “อย่างใดอย่างหนึ่ง” (OR)
+export function hasRoleOrDepartment(user, roleNames = [], deptCodes = []) {
+  const okRole = roleNames.length ? isRole(user, ...roleNames) : false;
+  const okDept = deptCodes.length ? inDepartment(user, ...deptCodes) : false;
+  return okRole || okDept;
 }

@@ -1,67 +1,50 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+// ใช้ <img> ปลอดภัยสุด ไม่ต้อง config remotePatterns ของ next/image
 import { apiUrl } from "@/lib/api";
-import { useEffect, useRef, useState } from "react";
 
 function initialsFrom(name, email) {
   const src = (name && name.trim()) || (email && email.split("@")[0]) || "";
   if (!src) return "?";
   const parts = src.split(/\s+/).filter(Boolean);
-  const pick = parts.length >= 2 ? parts[0][0] + parts[parts.length - 1][0] : src.slice(0, 2);
+  const pick =
+    parts.length >= 2 ? parts[0][0] + parts[parts.length - 1][0] : src.slice(0, 2);
   return pick.toUpperCase();
 }
 
+/**
+ * Props:
+ * - href: ลิงก์ไปหน้าโปรไฟล์ (default "/profile")
+ * - name, email: ใช้ทำตัวอักษร fallback
+ * - photo: ถ้ามี (เช่น URL เต็ม / หรือ path จาก backend) จะใช้ทันที
+ * - userId: ถ้าให้มา จะประกอบ URL เป็น /files/user/avatar/:userId
+ * - fetchUrl: ถ้าอยากกำหนด path เองแทน userId (เช่น "/profile/files/user/avatar/123")
+ * - version: number/string สำหรับ cache-busting (เช่น Date.now())
+ */
 export default function AvatarButton({
-  href = "/account",
+  href = "/profile",
   name,
   email,
   photo,
-  fetchUrl = "/api/me/photo",
+  userId,
+  fetchUrl,
+  version,
   onClick,
   className,
 }) {
-  const [autoPhoto, setAutoPhoto] = useState(null);
-  const blobRef = useRef(null);
+  // 1) เลือกฐาน URL ตามลำดับ: photo > userId > fetchUrl
+  let base =
+    photo ||
+    (userId ? apiUrl(`/profile/files/user/avatar/${userId}`) : fetchUrl ? apiUrl(fetchUrl) : "");
 
-  useEffect(() => {
-    let aborted = false;
-    const ctrl = new AbortController();
-
-    async function load() {
-      if (photo) return;
-      try {
-        const r = await fetch(apiUrl(fetchUrl), { signal: ctrl.signal, cache: "no-store", credentials: "include" });
-        if (!r.ok) return;
-        const b = await r.blob();
-        const url = URL.createObjectURL(b);
-        if (!aborted) {
-          if (blobRef.current) URL.revokeObjectURL(blobRef.current);
-          blobRef.current = url;
-          setAutoPhoto(url);
-        } else {
-          URL.revokeObjectURL(url);
-        }
-      } catch {
-        /* ignore */
-      }
-    }
-
-    load();
-    return () => {
-      aborted = true;
-      ctrl.abort();
-      if (blobRef.current) {
-        URL.revokeObjectURL(blobRef.current);
-        blobRef.current = null;
-      }
-    };
-  }, [photo, fetchUrl]);
+  // 2) เติม ?ts=xxx เพื่อ bust cache เวลาอัปโหลดรูปใหม่
+  const resolved =
+    base && version != null
+      ? `${base}${base.includes("?") ? "&" : "?"}ts=${encodeURIComponent(version)}`
+      : base;
 
   const label = "Open account page";
-  const resolved = photo ?? autoPhoto;
-  const isInternal = !!resolved && (resolved.startsWith("/api/") || resolved.startsWith("blob:") || resolved.startsWith("data:"));
 
   return (
     <Link
@@ -77,16 +60,14 @@ export default function AvatarButton({
       }
     >
       {resolved ? (
-        <Image
+        <img
           src={resolved}
           alt={name || email || "avatar"}
           className="h-full w-full object-cover"
-          fill
-          sizes="36px"
-          priority
+          referrerPolicy="no-referrer"
         />
       ) : (
-        <span className="text-xs font-semibold select-none">
+        <span className="select-none text-xs font-semibold">
           {initialsFrom(name, email)}
         </span>
       )}

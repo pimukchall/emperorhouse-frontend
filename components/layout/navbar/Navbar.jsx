@@ -1,31 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import StatefulButton from "@/components/ui/stateful-button";
-import { NavLinks } from "./NavLinks";
+import { NavLinks } from "./NavLinks"; // ถ้าไฟล์นี้ export default ให้เปลี่ยนเป็น: import NavLinks from "./NavLinks";
 import AvatarButton from "./AvatarButton";
 import { MobileMenu } from "./MobileMenu";
 import { cn } from "@/lib/cn";
 import { useAuth } from "@/providers/local-auth";
-
-function has(roles, name) {
-  return Array.isArray(roles) && roles.some((r) => new RegExp(`^(${name})$`, "i").test(r));
-}
+import { isRole } from "@/providers/local-auth";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [avatarVersion, setAvatarVersion] = useState(0); // cache-busting
+
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, signOut } = useAuth();
 
-  const hr = has(user?.roles, "hr\\.manager");
-  const hrHrm = has(user?.roles, "hr\\.hrm");
-  const admin = has(user?.roles, "admin");
+  // เช็ค role จาก DB
+  const hr = isRole(user, "hr.manager");
+  const hrHrm = isRole(user, "hr.hrm");
+  const admin = isRole(user, "admin");
+
+  // อัปเดต version เมื่อ avatarPath เปลี่ยน
+  useEffect(() => {
+    if (user?.avatarPath) setAvatarVersion(Date.now());
+  }, [user?.avatarPath]);
+
+  async function handleSignOut() {
+    try {
+      setSigningOut(true);
+      await signOut();
+      router.push("/login");
+    } finally {
+      setSigningOut(false);
+    }
+  }
 
   return (
     <nav
@@ -40,7 +56,7 @@ export default function Navbar() {
         <Link href="/" className="text-xl font-bold">EMP</Link>
 
         {/* Desktop Nav */}
-        <div className="hidden lg:flex items-center w-full">
+        <div className="hidden w-full items-center lg:flex">
           {/* Left: Nav links */}
           <NavLinks isHrManager={hr} isHrHrm={hrHrm} isAdmin={admin} />
 
@@ -48,9 +64,10 @@ export default function Navbar() {
           <div className="ml-auto flex items-center gap-3">
             {user && (
               <AvatarButton
-                name={user.name}
-                email={user.email}
-                photo={user.photo}
+                name={user?.name}
+                email={user?.email}
+                userId={user?.id}
+                version={avatarVersion}
               />
             )}
 
@@ -61,17 +78,16 @@ export default function Navbar() {
             ) : user ? (
               <StatefulButton
                 className="h-9 rounded-full"
+                loading={signingOut}
                 loadingText="Signing out..."
-                onClick={() => signOut().then(() => router.push("/login"))}
+                onClick={handleSignOut}
               >
                 Sign Out
               </StatefulButton>
             ) : (
               <Button
                 className="h-9 rounded-full"
-                onClick={() =>
-                  router.push(`/login?callbackUrl=${encodeURIComponent(pathname)}`)
-                }
+                onClick={() => router.push(`/login?callbackUrl=${encodeURIComponent(pathname)}`)}
               >
                 Get Started
               </Button>
@@ -83,10 +99,10 @@ export default function Navbar() {
         <Button
           variant="ghost"
           onClick={() => setOpen((v) => !v)}
-          className="lg:hidden p-2 rounded-md hover:bg-gray-100 dark:hover:bg白/10"
+          className="rounded-md p-2 hover:bg-gray-100 dark:hover:bg-white/10 lg:hidden"
           aria-label="Toggle navigation menu"
         >
-          {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </Button>
       </div>
 

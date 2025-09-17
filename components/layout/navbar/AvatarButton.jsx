@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { apiUrl } from "@/lib/api";
 import { useEffect, useRef, useState } from "react";
 
 function initialsFrom(name, email) {
@@ -31,7 +32,7 @@ export default function AvatarButton({
     async function load() {
       if (photo) return;
       try {
-        const r = await fetch(fetchUrl, { signal: ctrl.signal, cache: "no-store" });
+        const r = await fetch(apiUrl(fetchUrl), { signal: ctrl.signal, cache: "no-store", credentials: "include" });
         if (!r.ok) return;
         const b = await r.blob();
         const url = URL.createObjectURL(b);

@@ -10,6 +10,7 @@ export default function Providers({ children }) {
       defaultTheme="light"
       enableSystem={false}
       storageKey="theme"
+      disableTransitionOnChange
     >
       <AuthProvider>{children}</AuthProvider>
     </ThemeProvider>

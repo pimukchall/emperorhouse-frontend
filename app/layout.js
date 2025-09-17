@@ -15,7 +15,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="th">
+    <html lang="th" suppressHydrationWarning>
       <body className={`${prompt.className} antialiased`}>
         <Providers>
           <Navbar />

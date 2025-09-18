@@ -27,8 +27,7 @@ export default function AvatarButton({
   name,
   email,
   photo,
-  // ตัวอย่างใช้งานกับ backend: `/files/user/avatar/${userId}`
-  fetchUrl = "/api/me/photo",
+  fetchUrl = null,
   onClick,
   className,
   /** เลือก fallback: "icon" | "initials" (ดีฟอลต์ "icon") */

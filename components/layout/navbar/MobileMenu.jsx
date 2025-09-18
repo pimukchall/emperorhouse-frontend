@@ -12,6 +12,8 @@ import {
   Shield,
   Building2,
   Users,
+  ClipboardList,
+  BarChart3,
 } from "lucide-react";
 import AvatarButton from "./AvatarButton";
 import { Button } from "@/components/ui/button";
@@ -80,13 +82,13 @@ function canAccessAdmin(user) {
   return false;
 }
 
-/** (ตัวอย่าง) สิทธิ์เข้า HRM group:
- * - คนในแผนก HR และมี role hrm หรือ manager (หรือเป็น admin)
+/** (ตัวอย่าง) สิทธิ์เข้า HR group:
+ * - คนในแผนก HR
  */
-function canAccessHRM(user) {
+function canAccessHR(user) {
   if (isRole(user, "admin")) return true;
   if (!inDepartment(user, "HR")) return false;
-  return isRole(user, "hrm") || isRole(user, "manager");
+  return true;
 }
 
 export function MobileMenu({ open, onClose }) {
@@ -94,7 +96,7 @@ export function MobileMenu({ open, onClose }) {
   const router = useRouter();
   const { user, loading, signOut } = useAuth();
 
-  const [hrmOpen, setHrmOpen] = useState(false);
+  const [hrOpen, setHrOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
 
   if (!open) return null;
@@ -107,8 +109,8 @@ export function MobileMenu({ open, onClose }) {
   ];
 
   const toggleGroup = (key) => {
-    if (key === "hrm") {
-      setHrmOpen((v) => {
+    if (key === "hr") {
+      setHrOpen((v) => {
         const next = !v;
         if (next) setAdminOpen(false);
         return next;
@@ -116,13 +118,13 @@ export function MobileMenu({ open, onClose }) {
     } else if (key === "admin") {
       setAdminOpen((v) => {
         const next = !v;
-        if (next) setHrmOpen(false);
+        if (next) setHrOpen(false);
         return next;
       });
     }
   };
 
-  const showHRM = canAccessHRM(user);
+  const showHR = canAccessHR(user);
   const showAdmin = canAccessAdmin(user);
 
   return (
@@ -139,16 +141,18 @@ export function MobileMenu({ open, onClose }) {
             <MobileNavItem key={item.href} item={item} onClick={onClose} />
           ))}
 
-          {showHRM && (
+          {showHR && (
             <Group
-              id="hrm-mobile"
-              label="HRM"
+              id="hr-mobile"
+              label="HR"
               Icon={MessageSquare}
-              open={hrmOpen}
-              onToggle={() => toggleGroup("hrm")}
+              open={hrOpen}
+              onToggle={() => toggleGroup("hr")}
               onItemClick={onClose}
               items={[
-                { label: "LineOA", href: "/admin/hrm/lineoa", icon: MessageSquare },
+                { label: "LineOA", href: "/admin/hr/lineoa", icon: MessageSquare },
+                { label: "Evaluations", href: "/admin/hr/evaluations", icon: ClipboardList },
+                { label: "HR Stats (สถิติรวม)", href: "/admin/hr/evaluations/stats", icon: BarChart3 },
               ]}
             />
           )}
@@ -178,9 +182,9 @@ export function MobileMenu({ open, onClose }) {
               {user && (
                 <div className="flex items-center gap-3">
                   <AvatarButton
-                    name={user.name}
-                    email={user.email}
-                    userId={user.id}
+                    name={user?.name}
+                    email={user?.email}
+                    fetchUrl={user?.id ? `/profile/files/user/avatar/${user.id}` : undefined}
                     onClick={onClose}
                   />
                   <div className="min-w-0">

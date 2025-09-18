@@ -12,19 +12,21 @@ import {
   Shield,
   Building2,
   Users,
+  ClipboardList,
+  BarChart3,
 } from "lucide-react";
 import { DesktopNavItem } from "./NavItem";
 import { cn } from "@/lib/cn";
 import { useAuth, isRole, inDepartment } from "@/providers/local-auth";
 
-/** สิทธิ์เข้า HRM:
+/** สิทธิ์เข้า HR:
  * - admin → ผ่าน
- * - หรือ แผนก HR และ role เป็น hrm หรือ manager
+ * - หรือ แผนก HR
  */
-function canAccessHRM(user) {
+function canAccessHR(user) {
   if (isRole(user, "admin")) return true;
   if (!inDepartment(user, "HR")) return false;
-  return isRole(user, "hrm") || isRole(user, "manager");
+  return true;
 }
 
 /** สิทธิ์เข้า Admin:
@@ -46,7 +48,7 @@ export function NavLinks() {
     { label: "Contact", href: "/contact", icon: Mail },
   ];
 
-  const showHRM = canAccessHRM(user);
+  const showHR = canAccessHR(user);
   const showAdmin = canAccessAdmin(user);
 
   return (
@@ -55,17 +57,17 @@ export function NavLinks() {
         <DesktopNavItem key={item.href} item={item} />
       ))}
 
-      {showHRM && <HrmDropdown />}
+      {showHR && <HrDropdown />}
       {showAdmin && <AdminDropdown />}
     </div>
   );
 }
 
-/* ===== HRM dropdown ===== */
-function HrmDropdown() {
+/* ===== HR dropdown ===== */
+function HrDropdown() {
   const [open, setOpen] = useState(false);
   const closeTimer = useRef(null);
-  const menuId = "hrm-menu";
+  const menuId = "hr-menu";
 
   const handleOpen = useCallback(() => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -99,7 +101,7 @@ function HrmDropdown() {
         )}
       >
         <MessageSquare className="h-4 w-4" />
-        HRM
+        HR
         <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
@@ -109,7 +111,9 @@ function HrmDropdown() {
         className={`absolute left-0 z-50 mt-2 min-w-[180px] rounded-xl border bg-white shadow-lg ring-1 ring-black/5 dark:bg-neutral-900 dark:border-white/10 dark:ring-white/10 transition-all duration-150
         ${open ? "opacity-100 translate-y-0" : "pointer-events-none -translate-y-1 opacity-0"}`}
       >
-        <DropdownItem href="/admin/hrm/lineoa" icon={MessageSquare} label="LineOA" />
+        <DropdownItem href="/admin/hr/lineoa" icon={MessageSquare} label="LineOA" />
+        <DropdownItem href="/admin/hr/evaluations" icon={ClipboardList} label="Evaluations" />
+        <DropdownItem href="/admin/hr/evaluations/stats" icon={BarChart3} label="HR Stats (สถิติรวม)" />
       </div>
     </div>
   );

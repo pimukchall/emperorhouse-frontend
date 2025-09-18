@@ -2,11 +2,43 @@
 
 import Link from "next/link";
 import { useState, useRef, useCallback } from "react";
-import { Home, Info, Wrench, Mail, MessageSquare, Code, ChevronDown, NotebookPen } from "lucide-react";
+import {
+  Home,
+  Info,
+  Wrench,
+  Mail,
+  MessageSquare,
+  ChevronDown,
+  Shield,
+  Building2,
+  Users,
+} from "lucide-react";
 import { DesktopNavItem } from "./NavItem";
 import { cn } from "@/lib/cn";
+import { useAuth, isRole, inDepartment } from "@/providers/local-auth";
 
-export function NavLinks({ isHrManager, isHrHrm, isAdmin = false }) {
+/** สิทธิ์เข้า HRM:
+ * - admin → ผ่าน
+ * - หรือ แผนก HR และ role เป็น hrm หรือ manager
+ */
+function canAccessHRM(user) {
+  if (isRole(user, "admin")) return true;
+  if (!inDepartment(user, "HR")) return false;
+  return isRole(user, "hrm") || isRole(user, "manager");
+}
+
+/** สิทธิ์เข้า Admin:
+ * - admin → ผ่าน
+ * - หรือ แผนก HR และ role เป็น manager
+ */
+function canAccessAdmin(user) {
+  if (isRole(user, "admin")) return true;
+  return inDepartment(user, "HR") && isRole(user, "manager");
+}
+
+export function NavLinks() {
+  const { user } = useAuth();
+
   const base = [
     { label: "Home", href: "/", icon: Home },
     { label: "About", href: "#about", icon: Info },
@@ -14,18 +46,22 @@ export function NavLinks({ isHrManager, isHrHrm, isAdmin = false }) {
     { label: "Contact", href: "/contact", icon: Mail },
   ];
 
+  const showHRM = canAccessHRM(user);
+  const showAdmin = canAccessAdmin(user);
+
   return (
     <div className="ml-10 flex items-center gap-6">
       {base.map((item) => (
         <DesktopNavItem key={item.href} item={item} />
       ))}
 
-      {(isHrManager || isHrHrm || isAdmin) && <HrmDropdown />}
-      {isAdmin && <DevDropdown />}
+      {showHRM && <HrmDropdown />}
+      {showAdmin && <AdminDropdown />}
     </div>
   );
 }
 
+/* ===== HRM dropdown ===== */
 function HrmDropdown() {
   const [open, setOpen] = useState(false);
   const closeTimer = useRef(null);
@@ -79,10 +115,11 @@ function HrmDropdown() {
   );
 }
 
-function DevDropdown(){
+/* ===== Admin dropdown (แทน Dev) ===== */
+function AdminDropdown() {
   const [open, setOpen] = useState(false);
   const closeTimer = useRef(null);
-  const menuId = "dev-menu";
+  const menuId = "admin-menu";
 
   const handleOpen = useCallback(() => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -115,18 +152,21 @@ function DevDropdown(){
           "text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white"
         )}
       >
-        <Code className="h-4 w-4" />
-        Dev
+        <Shield className="h-4 w-4" />
+        Admin
         <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       <div
         id={menuId}
         role="menu"
-        className={`absolute left-0 z-50 mt-2 min-w-[180px] rounded-xl border bg-white shadow-lg ring-1 ring-black/5 dark:bg-neutral-900 dark:border-white/10 dark:ring-white/10 transition-all duration-150
+        className={`absolute left-0 z-50 mt-2 min-w-[200px] rounded-xl border bg-white shadow-lg ring-1 ring-black/5 dark:bg-neutral-900 dark:border-white/10 dark:ring-white/10 transition-all duration-150
         ${open ? "opacity-100 translate-y-0" : "pointer-events-none -translate-y-1 opacity-0"}`}
       >
-        <DropdownItem href="/dev/worklog" icon={NotebookPen} label="Daily report" />
+        <DropdownItem href="/admin/departments" icon={Building2} label="Departments" />
+        <DropdownItem href="/admin/roles"       icon={Shield}    label="Roles" />
+        <DropdownItem href="/admin/users"       icon={Users}     label="Users" />
+        <DropdownItem href="/admin/contacts"    icon={Mail}      label="Contacts" />
       </div>
     </div>
   );
@@ -140,7 +180,7 @@ function DropdownItem({ href, icon: Icon, label, onClick }) {
       className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-800 hover:bg-neutral-50 focus:bg-neutral-50 focus:outline-none dark:text-neutral-200 dark:hover:bg-white/5 dark:focus:bg-white/5"
       onClick={onClick}
     >
-      <Icon className="h-4 w-4" />
+      {Icon ? <Icon className="h-4 w-4" /> : null}
       <span>{label}</span>
     </Link>
   );

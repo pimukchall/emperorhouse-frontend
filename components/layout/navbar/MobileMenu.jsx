@@ -2,7 +2,17 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { MobileNavItem } from "./NavItem";
-import { Home, Info, Wrench, Mail, MessageSquare, Code, ChevronDown, FileText } from "lucide-react";
+import {
+  Home,
+  Info,
+  Wrench,
+  Mail,
+  MessageSquare,
+  ChevronDown,
+  Shield,
+  Building2,
+  Users,
+} from "lucide-react";
 import AvatarButton from "./AvatarButton";
 import { Button } from "@/components/ui/button";
 import StatefulButton from "@/components/ui/stateful-button";
@@ -10,9 +20,9 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { useAuth } from "@/providers/local-auth";
-import { isRole } from "@/providers/local-auth";
+import { useAuth, isRole, inDepartment } from "@/providers/local-auth";
 
+/** กลุ่มรายการแบบพับได้บนมือถือ */
 function Group({ id, label, Icon, open, onToggle, items, onItemClick }) {
   return (
     <>
@@ -48,7 +58,7 @@ function Group({ id, label, Icon, open, onToggle, items, onItemClick }) {
                   onClick={onItemClick}
                   className="flex items-center gap-3 rounded-md px-3 py-2.5 text-gray-700 hover:bg-black/5 dark:text-gray-300 dark:hover:bg-white/5"
                 >
-                  <it.icon className="h-5 w-5" />
+                  {it.icon ? <it.icon className="h-5 w-5" /> : null}
                   {it.label}
                 </Link>
               ))}
@@ -60,20 +70,34 @@ function Group({ id, label, Icon, open, onToggle, items, onItemClick }) {
   );
 }
 
+/** สิทธิ์เข้าโซน Admin:
+ * - admin → ผ่าน
+ * - หรือ แผนก HR และ role เป็น manager → ผ่าน
+ */
+function canAccessAdmin(user) {
+  if (isRole(user, "admin")) return true;
+  if (inDepartment(user, "HR") && isRole(user, "manager")) return true;
+  return false;
+}
+
+/** (ตัวอย่าง) สิทธิ์เข้า HRM group:
+ * - คนในแผนก HR และมี role hrm หรือ manager (หรือเป็น admin)
+ */
+function canAccessHRM(user) {
+  if (isRole(user, "admin")) return true;
+  if (!inDepartment(user, "HR")) return false;
+  return isRole(user, "hrm") || isRole(user, "manager");
+}
+
 export function MobileMenu({ open, onClose }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, signOut } = useAuth();
 
   const [hrmOpen, setHrmOpen] = useState(false);
-  const [devOpen, setDevOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
 
   if (!open) return null;
-
-  // เช็คจาก DB role.name
-  const isHrManager = isRole(user, "hr.manager");
-  const isHrHrm = isRole(user, "hr.hrm");
-  const isAdmin = isRole(user, "admin");
 
   const base = [
     { label: "Home", href: "/", icon: Home },
@@ -86,17 +110,20 @@ export function MobileMenu({ open, onClose }) {
     if (key === "hrm") {
       setHrmOpen((v) => {
         const next = !v;
-        if (next) setDevOpen(false);
+        if (next) setAdminOpen(false);
         return next;
       });
-    } else {
-      setDevOpen((v) => {
+    } else if (key === "admin") {
+      setAdminOpen((v) => {
         const next = !v;
         if (next) setHrmOpen(false);
         return next;
       });
     }
   };
+
+  const showHRM = canAccessHRM(user);
+  const showAdmin = canAccessAdmin(user);
 
   return (
     <AnimatePresence>
@@ -105,14 +132,14 @@ export function MobileMenu({ open, onClose }) {
         animate={{ opacity: 1, height: "auto", y: 0 }}
         exit={{ opacity: 0, height: 0, y: -6 }}
         transition={{ duration: 0.22 }}
-        className="lg:hidden overflow-hidden bg-white dark:bg-neutral-900 shadow-xl border border-black/10 dark:border-white/10 rounded-2xl mx-3 mt-2"
+        className="lg:hidden z-[55] overflow-hidden bg-white dark:bg-neutral-900 shadow-xl border border-black/10 dark:border-white/10 rounded-2xl mx-3 mt-2"
       >
         <div className="flex flex-col p-4 gap-1">
           {base.map((item) => (
             <MobileNavItem key={item.href} item={item} onClick={onClose} />
           ))}
 
-          {(isHrManager || isHrHrm || isAdmin) && (
+          {showHRM && (
             <Group
               id="hrm-mobile"
               label="HRM"
@@ -120,19 +147,27 @@ export function MobileMenu({ open, onClose }) {
               open={hrmOpen}
               onToggle={() => toggleGroup("hrm")}
               onItemClick={onClose}
-              items={[{ label: "LineOA", href: "/admin/hrm/lineoa", icon: MessageSquare }]}
+              items={[
+                { label: "LineOA", href: "/admin/hrm/lineoa", icon: MessageSquare },
+              ]}
             />
           )}
 
-          {isAdmin && (
+          {/* กลุ่ม Admin (แทน Dev ที่ลบออก) */}
+          {showAdmin && (
             <Group
-              id="dev-mobile"
-              label="Dev"
-              Icon={Code}
-              open={devOpen}
-              onToggle={() => toggleGroup("dev")}
+              id="admin-mobile"
+              label="Admin"
+              Icon={Shield}
+              open={adminOpen}
+              onToggle={() => toggleGroup("admin")}
               onItemClick={onClose}
-              items={[{ label: "Daily report", href: "/dev/worklog", icon: FileText }]}
+              items={[
+                { label: "Departments", href: "/admin/departments", icon: Building2 },
+                { label: "Roles",       href: "/admin/roles",       icon: Shield },
+                { label: "Users",       href: "/admin/users",       icon: Users },
+                { label: "Contacts",    href: "/admin/contacts",    icon: Mail },
+              ]}
             />
           )}
 
@@ -156,7 +191,9 @@ export function MobileMenu({ open, onClose }) {
                     >
                       {user.name || user.email}
                     </Link>
-                    <div className="truncate text-xs text-gray-500 dark:text-gray-400">Account</div>
+                    <div className="truncate text-xs text-gray-500 dark:text-gray-400">
+                      Account
+                    </div>
                   </div>
                 </div>
               )}
@@ -185,7 +222,7 @@ export function MobileMenu({ open, onClose }) {
                   className="h-9 w-full rounded-full"
                   onClick={() => {
                     onClose();
-                    router.push(`/login?callbackUrl=${encodeURIComponent(pathname)}`);
+                    router.push(`/login?callbackUrl=${encodeURIComponent(pathname || "/")}`);
                   }}
                 >
                   Get Started

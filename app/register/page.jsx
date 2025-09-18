@@ -1,7 +1,17 @@
-import RegisterClient from "./RegisterClient";
+// app/register/page.jsx
+"use client";
 
-export const metadata = { title: "สมัครสมาชิก" };
+import { useRouter } from "next/navigation";
+import RegisterDialog from "@/components/modal/RegisterDialog";
 
-export default function Page() {
-  return <RegisterClient />;
+export default function RegisterPage() {
+  const router = useRouter();
+  return (
+    <div className="min-h-screen">
+      <RegisterDialog
+        open={true}
+        onClose={() => router.replace("/login")}
+      />
+    </div>
+  );
 }

@@ -13,11 +13,28 @@ import { MobileMenu } from "./MobileMenu";
 import { cn } from "@/lib/cn";
 import { useAuth } from "@/providers/local-auth";
 
+// 🔹 เพิ่ม: โมดัลยืนยันมาตรฐาน
+import { useConfirm } from "@/components/modal/useConfirm";
+
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, signOut } = useAuth();
+  const { confirm, dialog } = useConfirm(); // 🔹 ใช้ hook
+
+  async function handleSignOut() {
+    const ok = await confirm({
+      title: "Sign out",
+      description: "คุณต้องการออกจากระบบใช่ไหม?",
+      confirmText: "Sign Out",
+      cancelText: "ยกเลิก",
+      onConfirm: async () => {
+        await signOut();
+      },
+    });
+    if (ok) router.push("/login");
+  }
 
   return (
     <nav
@@ -28,7 +45,9 @@ export default function Navbar() {
       )}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
-        <Link href="/" className="text-xl font-bold">EMP</Link>
+        <Link href="/" className="text-xl font-bold">
+          EMP
+        </Link>
 
         {/* Desktop */}
         <div className="hidden lg:flex items-center w-full">
@@ -38,7 +57,9 @@ export default function Navbar() {
               <AvatarButton
                 name={user?.name}
                 email={user?.email}
-                fetchUrl={user?.id ? `/profile/files/user/avatar/${user.id}` : undefined}
+                fetchUrl={
+                  user?.id ? `/profile/files/user/avatar/${user.id}` : undefined
+                }
               />
             )}
             <ThemeToggle />
@@ -48,7 +69,7 @@ export default function Navbar() {
               <StatefulButton
                 className="h-9 rounded-full"
                 loadingText="Signing out..."
-                onClick={() => signOut().then(() => router.push("/login"))}
+                onClick={handleSignOut}
               >
                 Sign Out
               </StatefulButton>
@@ -56,7 +77,9 @@ export default function Navbar() {
               <Button
                 className="h-9 rounded-full"
                 onClick={() =>
-                  router.push(`/login?callbackUrl=${encodeURIComponent(pathname || "/")}`)
+                  router.push(
+                    `/login?callbackUrl=${encodeURIComponent(pathname || "/")}`
+                  )
                 }
               >
                 Get Started
@@ -78,6 +101,9 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       <MobileMenu open={open} onClose={() => setOpen(false)} />
+
+      {/* 🔹 โมดัลยืนยัน (เรนเดอร์ไว้ท้ายคอมโพเนนต์) */}
+      {dialog}
     </nav>
   );
 }

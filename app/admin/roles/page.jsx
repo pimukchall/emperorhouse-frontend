@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import StatefulButton from "@/components/ui/stateful-button";
-import ErrorDialog from "@/components/ui/ErrorDialog";
+import ErrorDialog from "@/components/modal/ErrorDialog";
 import { useAuth, hasRole } from "@/providers/local-auth";
 
 const PAGE_SIZE = 20;

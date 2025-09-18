@@ -1,0 +1,48 @@
+"use client";
+import Modal from "@/components/modal/Modal";
+import { Button } from "@/components/ui/button";
+
+const tone = {
+  success: {
+    ring: "ring-green-200 dark:ring-green-900/40",
+    bg: "bg-green-50 dark:bg-green-900/30",
+    text: "text-green-800 dark:text-green-100",
+    title: "สำเร็จ",
+  },
+  error: {
+    ring: "ring-red-200 dark:ring-red-900/40",
+    bg: "bg-red-50 dark:bg-red-900/30",
+    text: "text-red-800 dark:text-red-100",
+    title: "เกิดข้อผิดพลาด",
+  },
+  info: {
+    ring: "ring-blue-200 dark:ring-blue-900/40",
+    bg: "bg-blue-50 dark:bg-blue-900/30",
+    text: "text-blue-800 dark:text-blue-100",
+    title: "แจ้งเตือน",
+  },
+};
+
+export default function NoticeDialog({
+  open,
+  onClose,
+  type = "info", // 'success' | 'error' | 'info'
+  title,
+  message,
+  footerButtons, // optional: <Button>...</Button>
+}) {
+  const t = tone[type] || tone.info;
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      size="md"
+      title={title || t.title}
+      footer={footerButtons ?? <Button onClick={onClose}>ปิด</Button>}
+    >
+      <div className={`rounded-md ${t.bg} ${t.ring} p-3`}>
+        <p className={`text-sm ${t.text}`}>{message}</p>
+      </div>
+    </Modal>
+  );
+}

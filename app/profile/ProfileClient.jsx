@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/local-auth";
 import { apiFetch, apiUrl } from "@/lib/api";
 import StatefulButton from "@/components/ui/stateful-button";
-import ErrorDialog from "@/components/ui/ErrorDialog";
 import { BackgroundGradient } from "@/components/ui/background-gradient";
+import NoticeDialog from "@/components/modal/NoticeDialog";
+import ChangePasswordDialog from "@/components/modal/ChangePasswordDialog";
 
 export default function ProfileClient() {
   const router = useRouter();
@@ -21,14 +22,23 @@ export default function ProfileClient() {
     lastNameEn: "",
   });
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [ok, setOk] = useState(false);
+
+  // Notice modal
+  const [notice, setNotice] = useState({
+    open: false,
+    type: "info", // 'success' | 'error' | 'info'
+    message: "",
+  });
+
+  // Change password modal
+  const [showChangePass, setShowChangePass] = useState(false);
 
   // ใช้ tick สำหรับ cache-busting ของรูป
   const [avatarTick, setAvatarTick] = useState(0);
   const [avatarError, setAvatarError] = useState(false);
-  const avatarUrl =
-    user?.id ? apiUrl(`/profile/files/user/avatar/${user.id}?ts=${avatarTick}`) : "";
+  const avatarUrl = user?.id
+    ? apiUrl(`/profile/files/user/avatar/${user.id}?ts=${avatarTick}`)
+    : "";
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login?callbackUrl=/profile");
@@ -55,7 +65,12 @@ export default function ProfileClient() {
           setAvatarTick(Date.now());
         }
       } catch (e) {
-        if (!stop) setError(e?.message || "โหลดโปรไฟล์ล้มเหลว");
+        if (!stop)
+          setNotice({
+            open: true,
+            type: "error",
+            message: e?.message || "โหลดโปรไฟล์ล้มเหลว",
+          });
       }
     })();
     return () => {
@@ -66,8 +81,6 @@ export default function ProfileClient() {
   async function onSubmit(e) {
     e.preventDefault();
     setBusy(true);
-    setOk(false);
-    setError("");
 
     try {
       await apiFetch(`/api/users/${user.id}`, {
@@ -80,10 +93,18 @@ export default function ProfileClient() {
           lastNameEn: form.lastNameEn,
         },
       });
-      setOk(true);
       reload?.(); // sync session -> navbar แสดงชื่อใหม่
+      setNotice({
+        open: true,
+        type: "success",
+        message: "บันทึกโปรไฟล์เรียบร้อย",
+      });
     } catch (e) {
-      setError(e?.data?.error || e?.message || "บันทึกไม่สำเร็จ");
+      setNotice({
+        open: true,
+        type: "error",
+        message: e?.data?.error || e?.message || "บันทึกไม่สำเร็จ",
+      });
     } finally {
       setBusy(false);
     }
@@ -92,11 +113,19 @@ export default function ProfileClient() {
   async function onUploadAvatar(file) {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setError("กรุณาเลือกรูปภาพเท่านั้น");
+      setNotice({
+        open: true,
+        type: "error",
+        message: "กรุณาเลือกรูปภาพเท่านั้น",
+      });
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      setError("ขนาดไฟล์ต้องไม่เกิน 2MB");
+      setNotice({
+        open: true,
+        type: "error",
+        message: "ขนาดไฟล์ต้องไม่เกิน 2MB",
+      });
       return;
     }
 
@@ -104,11 +133,20 @@ export default function ProfileClient() {
       const fd = new FormData();
       fd.append("avatar", file); // ให้ตรงกับ backend (uploadAvatarSingle รับ field นี้)
       await apiFetch("/profile/avatar", { method: "PUT", body: fd });
-      setAvatarError(false);      // เคลียร์สถานะ error เพื่อให้ลองโหลดใหม่
-      setAvatarTick(Date.now());  // รีเฟรชรูป (cache bust)
+      setAvatarError(false); // เคลียร์สถานะ error เพื่อให้ลองโหลดใหม่
+      setAvatarTick(Date.now()); // รีเฟรชรูป (cache bust)
       reload?.();
+      setNotice({
+        open: true,
+        type: "success",
+        message: "อัปโหลดรูปโปรไฟล์สำเร็จ",
+      });
     } catch (e) {
-      setError(e?.data?.error || e?.message || "อัปโหลดรูปไม่สำเร็จ");
+      setNotice({
+        open: true,
+        type: "error",
+        message: e?.data?.error || e?.message || "อัปโหลดรูปไม่สำเร็จ",
+      });
     }
   }
 
@@ -251,16 +289,14 @@ export default function ProfileClient() {
             </div>
           </div>
 
-          {ok && (
-            <div className="rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/40 dark:text-emerald-200">
-              บันทึกแล้ว
-            </div>
-          )}
-
           <div className="flex items-center justify-between gap-3">
-            <a href="/profile/change-password" className="text-sm underline">
+            <button
+              type="button"
+              onClick={() => setShowChangePass(true)}
+              className="text-sm underline"
+            >
               เปลี่ยนรหัสผ่าน
-            </a>
+            </button>
             <StatefulButton
               type="submit"
               loading={busy}
@@ -273,7 +309,19 @@ export default function ProfileClient() {
         </form>
       </BackgroundGradient>
 
-      <ErrorDialog open={!!error} message={error} onClose={() => setError("")} />
+      {/* Notice modal (success/error) */}
+      <NoticeDialog
+        open={notice.open}
+        onClose={() => setNotice((s) => ({ ...s, open: false }))}
+        type={notice.type}
+        message={notice.message}
+      />
+
+      {/* Change password modal */}
+      <ChangePasswordDialog
+        open={showChangePass}
+        onClose={() => setShowChangePass(false)}
+      />
     </main>
   );
 }

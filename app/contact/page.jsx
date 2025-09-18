@@ -88,7 +88,7 @@ export default function ContactPage() {
   const disabled = submitting || cooldownLeft > 0;
 
   return (
-    <main className="max-w-2xl mx-auto p-4 py-12 min-h-[60vh]">
+    <main className="mx-auto max-w-5xl p-6 py-30 space-y-8">
       <h1 className="text-3xl font-semibold mb-6">Contact Us</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">

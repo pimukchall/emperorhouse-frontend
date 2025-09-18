@@ -26,9 +26,9 @@ export default function ProfileClient() {
 
   // ใช้ tick สำหรับ cache-busting ของรูป
   const [avatarTick, setAvatarTick] = useState(0);
-  const avatarUrl = user?.id
-    ? apiUrl(`/profile/files/user/avatar/${user.id}?ts=${avatarTick}`)
-    : "";
+  const [avatarError, setAvatarError] = useState(false);
+  const avatarUrl =
+    user?.id ? apiUrl(`/profile/files/user/avatar/${user.id}?ts=${avatarTick}`) : "";
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login?callbackUrl=/profile");
@@ -39,8 +39,6 @@ export default function ProfileClient() {
     (async () => {
       if (!user?.id) return;
       try {
-        // ❌ เดิม: /api/users/:id
-        // ✅ ใหม่:
         const res = await apiFetch(`/api/users/${user.id}`);
         const u = res?.data || {};
         if (!stop) {
@@ -52,7 +50,9 @@ export default function ProfileClient() {
             firstNameEn: u.firstNameEn || "",
             lastNameEn: u.lastNameEn || "",
           });
-          setAvatarTick(Date.now()); // โหลด avatar ครั้งแรก
+          // โหลด avatar ครั้งแรก + เคลียร์ error รูปก่อนหน้า
+          setAvatarError(false);
+          setAvatarTick(Date.now());
         }
       } catch (e) {
         if (!stop) setError(e?.message || "โหลดโปรไฟล์ล้มเหลว");
@@ -70,8 +70,6 @@ export default function ProfileClient() {
     setError("");
 
     try {
-      // ❌ เดิม: /api/users/:id
-      // ✅ ใหม่:
       await apiFetch(`/api/users/${user.id}`, {
         method: "PATCH",
         body: {
@@ -106,7 +104,8 @@ export default function ProfileClient() {
       const fd = new FormData();
       fd.append("avatar", file); // ให้ตรงกับ backend (uploadAvatarSingle รับ field นี้)
       await apiFetch("/profile/avatar", { method: "PUT", body: fd });
-      setAvatarTick(Date.now()); // รีเฟรชรูป (cache bust)
+      setAvatarError(false);      // เคลียร์สถานะ error เพื่อให้ลองโหลดใหม่
+      setAvatarTick(Date.now());  // รีเฟรชรูป (cache bust)
       reload?.();
     } catch (e) {
       setError(e?.data?.error || e?.message || "อัปโหลดรูปไม่สำเร็จ");
@@ -114,7 +113,7 @@ export default function ProfileClient() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center">
+    <main className="mx-auto max-w-5xl p-6 py-30 space-y-8">
       <BackgroundGradient className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-lg dark:border-neutral-800 dark:bg-neutral-950">
         <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
           โปรไฟล์ของฉัน
@@ -125,13 +124,30 @@ export default function ProfileClient() {
 
         {/* Avatar upload */}
         <div className="mt-6 flex items-center gap-4">
-          <div className="h-16 w-16 overflow-hidden rounded-full ring-1 ring-black/10 dark:ring-white/10">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+          <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-full ring-1 ring-black/10 dark:ring-white/10 bg-neutral-200 dark:bg-neutral-800">
+            {/* มี URL และไม่ error → โชว์รูป; ถ้า error/ไม่มี → fallback icon */}
+            {avatarUrl && !avatarError ? (
+              <img
+                key={avatarUrl} // ให้ React re-mount เมื่อ tick เปลี่ยน
+                src={avatarUrl}
+                alt="avatar"
+                className="h-full w-full object-cover"
+                onLoad={() => setAvatarError(false)}
+                onError={() => setAvatarError(true)}
+                referrerPolicy="no-referrer"
+              />
             ) : (
-              <div className="grid h-full w-full place-items-center bg-neutral-200 text-sm text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-                ไม่มีรูป
-              </div>
+              // fallback icon
+              <svg
+                viewBox="0 0 24 24"
+                className="h-8 w-8 opacity-80"
+                aria-hidden="true"
+              >
+                <path
+                  fill="currentColor"
+                  d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z"
+                />
+              </svg>
             )}
           </div>
           <div className="flex flex-col gap-2">
@@ -166,7 +182,10 @@ export default function ProfileClient() {
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="name" className="text-sm text-neutral-700 dark:text-neutral-300">
+            <label
+              htmlFor="name"
+              className="text-sm text-neutral-700 dark:text-neutral-300"
+            >
               ชื่อที่แสดง (ชื่อเล่น)
             </label>
             <input
@@ -180,18 +199,26 @@ export default function ProfileClient() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1">
-              <label className="text-sm text-neutral-700 dark:text-neutral-300">ชื่อ (ไทย)</label>
+              <label className="text-sm text-neutral-700 dark:text-neutral-300">
+                ชื่อ (ไทย)
+              </label>
               <input
                 value={form.firstNameTh}
-                onChange={(e) => setForm({ ...form, firstNameTh: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, firstNameTh: e.target.value })
+                }
                 className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm text-neutral-700 dark:text-neutral-300">นามสกุล (ไทย)</label>
+              <label className="text-sm text-neutral-700 dark:text-neutral-300">
+                นามสกุล (ไทย)
+              </label>
               <input
                 value={form.lastNameTh}
-                onChange={(e) => setForm({ ...form, lastNameTh: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, lastNameTh: e.target.value })
+                }
                 className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
               />
             </div>
@@ -199,18 +226,26 @@ export default function ProfileClient() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1">
-              <label className="text-sm text-neutral-700 dark:text-neutral-300">ชื่อ (อังกฤษ)</label>
+              <label className="text-sm text-neutral-700 dark:text-neutral-300">
+                ชื่อ (อังกฤษ)
+              </label>
               <input
                 value={form.firstNameEn}
-                onChange={(e) => setForm({ ...form, firstNameEn: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, firstNameEn: e.target.value })
+                }
                 className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm text-neutral-700 dark:text-neutral-300">นามสกุล (อังกฤษ)</label>
+              <label className="text-sm text-neutral-700 dark:text-neutral-300">
+                นามสกุล (อังกฤษ)
+              </label>
               <input
                 value={form.lastNameEn}
-                onChange={(e) => setForm({ ...form, lastNameEn: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, lastNameEn: e.target.value })
+                }
                 className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
               />
             </div>

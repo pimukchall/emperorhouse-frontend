@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 
 export function DesktopNavItem({ item }) {
   const pathname = usePathname();

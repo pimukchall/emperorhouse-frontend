@@ -43,7 +43,8 @@ export default function LoginClient() {
 
     setBusy(true);
     try {
-      await signIn({ email, password, remember });
+      // ⬇️ แก้ให้ตรงตาม provider ใหม่: signIn(email, password, { remember })
+      await signIn(email, password, { remember });
 
       // ✅ แสดง Success modal สั้น ๆ ก่อนเปลี่ยนหน้า
       setNotice({ open: true, type: "success", message: "เข้าสู่ระบบสำเร็จ" });
@@ -125,7 +126,6 @@ export default function LoginClient() {
               จำฉันไว้ 7 วัน
             </label>
 
-            {/* 🔁 เปลี่ยนจากลิงก์ ไปเปิดโมดัลลืมรหัสผ่าน */}
             <button
               type="button"
               onClick={() => setShowForgot(true)}

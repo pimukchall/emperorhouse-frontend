@@ -29,41 +29,29 @@ export default function UsersTable({
           <tbody>
             {items.map((u) => {
               const pri = u.primaryUserDept;
-              const others = (u.userDepartments || []).filter(
-                (d) => d.id !== pri?.id
-              );
+              const others = (u.userDepartments || []).filter((d) => d.id !== pri?.id);
               return (
-                <tr
-                  key={u.id}
-                  className="border-t align-top hover:bg-neutral-50/60"
-                >
+                <tr key={u.id} className="border-t align-top hover:bg-neutral-50/60">
                   <Td>{u.id}</Td>
                   <Td className="whitespace-nowrap">{u.email}</Td>
                   <Td>
                     <div className="font-medium">
                       {u.name || `${u.firstNameTh || ""} ${u.lastNameTh || ""}`}
                     </div>
-                    <div className="text-xs text-neutral-600 mt-0.5">
-                      {u.role?.name || "-"}
-                    </div>
+                    <div className="text-xs text-neutral-600 mt-0.5">{u.role?.name || "-"}</div>
                   </Td>
                   <Td>
                     {pri?.department ? (
                       <div className="whitespace-nowrap">
                         <b>{pri.department.code}</b> · {pri.positionLevel}
                         {pri.positionName ? ` (${pri.positionName})` : ""}{" "}
-                        <span className="text-[11px] text-green-700">
-                          Primary
-                        </span>
+                        <span className="text-[11px] text-green-700">Primary</span>
                       </div>
                     ) : (
                       <div className="text-neutral-500">-</div>
                     )}
                     {others.map((d) => (
-                      <div
-                        key={d.id}
-                        className="text-[12px] text-neutral-700 whitespace-nowrap"
-                      >
+                      <div key={d.id} className="text-[12px] text-neutral-700 whitespace-nowrap">
                         {d.department?.code} · {d.positionLevel}
                         {d.positionName ? ` (${d.positionName})` : ""}
                       </div>
@@ -72,36 +60,22 @@ export default function UsersTable({
                   <Td>{u.deletedAt ? "Yes" : "-"}</Td>
                   <Td right className="space-x-1 whitespace-nowrap">
                     <GhostButton onClick={() => onEdit(u)}>Edit</GhostButton>
-                    <GhostButton onClick={() => onManageDepts(u)}>
-                      Manage Depts
-                    </GhostButton>
+                    <GhostButton onClick={() => onManageDepts(u)}>Manage Depts</GhostButton>
                     {!u.deletedAt ? (
-                      <GhostButton
-                        className="text-amber-700"
-                        onClick={() => onSoftDelete(u)}
-                      >
+                      <GhostButton className="text-amber-700" onClick={() => onSoftDelete(u)}>
                         Soft Delete
                       </GhostButton>
                     ) : (
                       <>
-                        <GhostButton
-                          className="text-green-700"
-                          onClick={() => onRestore(u)}
-                        >
+                        <GhostButton className="text-green-700" onClick={() => onRestore(u)}>
                           Restore
                         </GhostButton>
-                        <GhostButton
-                          className="text-rose-700"
-                          onClick={() => onHardDelete(u)}
-                        >
+                        <GhostButton className="text-rose-700" onClick={() => onHardDelete(u)}>
                           Hard Delete
                         </GhostButton>
                       </>
                     )}
-                    <GhostButton
-                      className="text-purple-700"
-                      onClick={() => onResetPassword(u)}
-                    >
+                    <GhostButton className="text-purple-700" onClick={() => onResetPassword(u)}>
                       Reset Password
                     </GhostButton>
                   </Td>
@@ -110,10 +84,7 @@ export default function UsersTable({
             })}
             {!items.length && (
               <tr>
-                <td
-                  colSpan={7}
-                  className="px-3 py-6 text-center text-neutral-500"
-                >
+                <td colSpan={7} className="px-3 py-6 text-center text-neutral-500">
                   ไม่พบข้อมูล
                 </td>
               </tr>
@@ -123,23 +94,13 @@ export default function UsersTable({
       </div>
 
       <div className="flex items-center justify-between p-3">
-        <div className="text-xs text-neutral-500">
-          ทั้งหมด {meta.total} รายการ
-        </div>
+        <div className="text-xs text-neutral-500">ทั้งหมด {meta.total} รายการ</div>
         <div className="flex gap-2">
-          <GhostButton
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
+          <GhostButton disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
             Prev
           </GhostButton>
-          <div className="text-sm">
-            Page {meta.page} / {meta.pages || 1}
-          </div>
-          <GhostButton
-            disabled={page >= (meta.pages || 1)}
-            onClick={() => setPage((p) => p + 1)}
-          >
+          <div className="text-sm">Page {meta.page} / {meta.pages || 1}</div>
+          <GhostButton disabled={page >= (meta.pages || 1)} onClick={() => setPage((p) => p + 1)}>
             Next
           </GhostButton>
         </div>
@@ -150,29 +111,18 @@ export default function UsersTable({
 
 function GhostButton({ children, className = "", ...rest }) {
   return (
-    <button
-      className={`px-2 py-1 rounded-md border hover:bg-neutral-50 disabled:opacity-50 ${className}`}
-      {...rest}
-    >
+    <button className={`px-2 py-1 rounded-md border hover:bg-neutral-50 disabled:opacity-50 ${className}`} {...rest}>
       {children}
     </button>
   );
 }
 function Th({ children, right }) {
   return (
-    <th
-      className={`px-3 py-2 ${
-        right ? "text-right" : "text-left"
-      } text-[13px] font-semibold text-neutral-700`}
-    >
+    <th className={`px-3 py-2 ${right ? "text-right" : "text-left"} text-[13px] font-semibold text-neutral-700`}>
       {children}
     </th>
   );
 }
 function Td({ children, className = "", right }) {
-  return (
-    <td className={`px-3 py-2 ${right ? "text-right" : ""} ${className}`}>
-      {children}
-    </td>
-  );
+  return <td className={`px-3 py-2 ${right ? "text-right" : ""} ${className}`}>{children}</td>;
 }

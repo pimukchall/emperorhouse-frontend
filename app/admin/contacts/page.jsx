@@ -23,7 +23,7 @@ export default function AdminContactsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  const [view, setView] = useState(null); // item ที่เปิดดู
+  const [view, setView] = useState(null);
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -113,7 +113,6 @@ export default function AdminContactsPage() {
 
       <section className="rounded-xl border overflow-hidden">
         <div className="grid grid-cols-1 md:grid-cols-2">
-          {/* List */}
           <div className="border-r">
             <div className="max-h-[70vh] overflow-auto">
               <table className="w-full text-sm">
@@ -144,7 +143,6 @@ export default function AdminContactsPage() {
               </table>
             </div>
 
-            {/* Pagination */}
             <div className="flex items-center justify-between p-3 border-t">
               <div className="text-xs text-neutral-500">ทั้งหมด {meta.total} รายการ</div>
               <div className="flex gap-2">
@@ -159,7 +157,6 @@ export default function AdminContactsPage() {
             </div>
           </div>
 
-          {/* Viewer */}
           <div className="p-4">
             {view ? (
               <article className="prose max-w-none">
@@ -171,12 +168,8 @@ export default function AdminContactsPage() {
                 <hr className="my-3" />
                 <pre className="whitespace-pre-wrap text-sm">{view.message}</pre>
                 <div className="mt-4 flex gap-2">
-                  <StatefulButton className="h-9 px-3" onClick={() => onDelete(view.id)}>
-                    ลบข้อความนี้
-                  </StatefulButton>
-                  <button className="h-9 px-3 rounded-md border" onClick={() => setView(null)}>
-                    ปิด
-                  </button>
+                  <StatefulButton className="h-9 px-3" onClick={() => onDelete(view.id)}>ลบข้อความนี้</StatefulButton>
+                  <button className="h-9 px-3 rounded-md border" onClick={() => setView(null)}>ปิด</button>
                 </div>
               </article>
             ) : (

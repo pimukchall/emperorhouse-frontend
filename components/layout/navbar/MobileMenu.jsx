@@ -22,7 +22,8 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { useAuth, isRole, inDepartment } from "@/providers/local-auth";
+// ⬇️ เปลี่ยน isRole → hasRole ให้ตรงกับ provider ใหม่
+import { useAuth, hasRole, inDepartment } from "@/providers/local-auth";
 
 /** กลุ่มรายการแบบพับได้บนมือถือ */
 function Group({ id, label, Icon, open, onToggle, items, onItemClick }) {
@@ -77,8 +78,8 @@ function Group({ id, label, Icon, open, onToggle, items, onItemClick }) {
  * - หรือ แผนก HR และ role เป็น manager → ผ่าน
  */
 function canAccessAdmin(user) {
-  if (isRole(user, "admin")) return true;
-  if (inDepartment(user, "HR") && isRole(user, "manager")) return true;
+  if (hasRole(user, "admin")) return true;
+  if (inDepartment(user, "HR") && hasRole(user, "manager")) return true;
   return false;
 }
 
@@ -86,7 +87,7 @@ function canAccessAdmin(user) {
  * - คนในแผนก HR
  */
 function canAccessHR(user) {
-  if (isRole(user, "admin")) return true;
+  if (hasRole(user, "admin")) return true;
   if (!inDepartment(user, "HR")) return false;
   return true;
 }
@@ -178,7 +179,7 @@ export function MobileMenu({ open, onClose }) {
           <div className="my-2 h-px bg-black/10 dark:bg-white/10" />
 
           <div className="mt-2 space-y-3">
-            <div className="flex flex-col gap-3 rounded-xl bg-black/5 px-3 py-2 dark:bg-white/5">
+            <div className="flex flex-col gap-3 rounded-xl bg-black/5 px-3 py-2 dark:bg.white/5 dark:bg-white/5">
               {user && (
                 <div className="flex items-center gap-3">
                   <AvatarButton

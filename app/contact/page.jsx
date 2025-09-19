@@ -60,7 +60,7 @@ export default function ContactPage() {
       }
 
       // ถ้า backend ของคุณ mount ไว้ใต้ /api ให้เปลี่ยน path เป็น "/api/contact"
-      const resp = await apiFetch("/api/contact", {
+      const resp = await apiFetch("/api/contacts", {
         method: "POST",
         headers: { "X-Client-Nonce": clientNonce },
         body: {

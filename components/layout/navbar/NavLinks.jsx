@@ -16,15 +16,16 @@ import {
   BarChart3,
 } from "lucide-react";
 import { DesktopNavItem } from "./NavItem";
-import { cn } from "@/lib/cn";
-import { useAuth, isRole, inDepartment } from "@/providers/local-auth";
+import { cn } from "@/lib/utils";
+// ⬇️ เปลี่ยน isRole → hasRole ให้ตรงกับ provider ใหม่
+import { useAuth, hasRole, inDepartment } from "@/providers/local-auth";
 
 /** สิทธิ์เข้า HR:
  * - admin → ผ่าน
  * - หรือ แผนก HR
  */
 function canAccessHR(user) {
-  if (isRole(user, "admin")) return true;
+  if (hasRole(user, "admin")) return true;
   if (!inDepartment(user, "HR")) return false;
   return true;
 }
@@ -34,8 +35,8 @@ function canAccessHR(user) {
  * - หรือ แผนก HR และ role เป็น manager
  */
 function canAccessAdmin(user) {
-  if (isRole(user, "admin")) return true;
-  return inDepartment(user, "HR") && isRole(user, "manager");
+  if (hasRole(user, "admin")) return true;
+  return inDepartment(user, "HR") && hasRole(user, "manager");
 }
 
 export function NavLinks() {

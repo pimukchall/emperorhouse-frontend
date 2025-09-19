@@ -10,7 +10,7 @@ import StatefulButton from "@/components/ui/stateful-button";
 import { NavLinks } from "./NavLinks";
 import AvatarButton from "./AvatarButton";
 import { MobileMenu } from "./MobileMenu";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/local-auth";
 
 // 🔹 เพิ่ม: โมดัลยืนยันมาตรฐาน
@@ -58,7 +58,7 @@ export default function Navbar() {
                 name={user?.name}
                 email={user?.email}
                 fetchUrl={
-                  user?.id ? `/profile/files/user/avatar/${user.id}` : undefined
+                  user?.id ? `/api/files/avatar/${user.id}` : undefined
                 }
               />
             )}

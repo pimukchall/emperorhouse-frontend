@@ -86,9 +86,7 @@ export default function UserForm({
         >
           <option value="">- เลือก -</option>
           {roles.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
+            <option key={r.id} value={r.id}>{r.name}</option>
           ))}
         </select>
       </label>
@@ -103,9 +101,7 @@ export default function UserForm({
         >
           <option value="">- เลือก -</option>
           {departments.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.code} · {d.nameTh}
-            </option>
+            <option key={d.id} value={d.id}>{d.code} · {d.nameTh}</option>
           ))}
         </select>
       </label>
@@ -115,11 +111,7 @@ export default function UserForm({
           {isEditing ? "บันทึกการแก้ไข" : "สร้างผู้ใช้"}
         </button>
         {isEditing && (
-          <button
-            type="button"
-            className="h-9 px-4 rounded-md border"
-            onClick={onCancel}
-          >
+          <button type="button" className="h-9 px-4 rounded-md border" onClick={onCancel}>
             ยกเลิกแก้ไข
           </button>
         )}

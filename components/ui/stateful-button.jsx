@@ -1,7 +1,7 @@
 "use client";
 import { forwardRef } from "react";
 import { motion } from "motion/react";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 
 const StatefulButton = forwardRef(function StatefulButton(
   {

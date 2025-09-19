@@ -2,7 +2,7 @@
 
 import { WobbleCard } from "@/components/ui/wobble-card";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 import { ClipboardList, PencilRuler, BugPlay, Rocket } from "lucide-react";
 
 const STEPS = [

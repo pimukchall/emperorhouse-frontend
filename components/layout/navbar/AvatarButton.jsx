@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { apiUrl } from "@/lib/api";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 import { UserRound } from "lucide-react";
 
 function initialsFrom(name, email) {

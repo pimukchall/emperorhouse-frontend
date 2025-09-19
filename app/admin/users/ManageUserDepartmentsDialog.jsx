@@ -19,7 +19,6 @@ export default function ManageUserDepartmentsDialog({
   const userId = user?.id;
   const boxRef = useRef(null);
 
-  // ปิดด้วย ESC
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => e.key === "Escape" && onClose?.();
@@ -71,9 +70,8 @@ export default function ManageUserDepartmentsDialog({
   async function setPrimary(udId) {
     setBusy(true);
     try {
-      await apiFetch(`/api/users/${userId}/departments/${udId}/primary`, {
-        method: "POST",
-      });
+      // ✅ ใช้ตาม route ใหม่: POST /api/users/:id/primary/:udId
+      await apiFetch(`/api/users/${userId}/primary/${udId}`, { method: "POST" });
       await load();
       onChanged?.();
     } catch (e) {
@@ -100,11 +98,9 @@ export default function ManageUserDepartmentsDialog({
     }
   }
 
-  // เปลี่ยน level: ตัดสินเองว่า promote หรือ demote
   async function applyLevel(ud, toLevel, positionName) {
     const fromLevel = ud.positionLevel;
     if (!toLevel || toLevel === fromLevel) {
-      // เปลี่ยนแต่ชื่อ
       return savePosition(ud.id, fromLevel, positionName);
     }
     setBusy(true);
@@ -151,10 +147,7 @@ export default function ManageUserDepartmentsDialog({
   const ended = items.filter((x) => !!x.endedAt);
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center"
-      onClick={() => onClose?.()}
-    >
+    <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center" onClick={() => onClose?.()}>
       <div
         ref={boxRef}
         className="w-full max-w-4xl rounded-xl bg-white p-4 shadow-lg"
@@ -165,10 +158,7 @@ export default function ManageUserDepartmentsDialog({
             <h3 className="text-lg font-semibold">Manage Departments</h3>
             <div className="text-sm text-neutral-600">{user?.email}</div>
           </div>
-          <button
-            className="px-3 py-1.5 rounded-md border"
-            onClick={() => onClose?.()}
-          >
+          <button className="px-3 py-1.5 rounded-md border" onClick={() => onClose?.()}>
             Close
           </button>
         </div>
@@ -179,11 +169,7 @@ export default function ManageUserDepartmentsDialog({
           <form className="grid gap-3 sm:grid-cols-4" onSubmit={addAssignment}>
             <label className="block">
               <div className="text-xs">Department</div>
-              <select
-                name="departmentId"
-                className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
-                required
-              >
+              <select name="departmentId" className="mt-1 w-full rounded-md border px-3 py-2 text-sm" required>
                 <option value="">- เลือก -</option>
                 {departments.map((d) => (
                   <option key={d.id} value={d.id}>
@@ -194,11 +180,7 @@ export default function ManageUserDepartmentsDialog({
             </label>
             <label className="block">
               <div className="text-xs">Position Level</div>
-              <select
-                name="positionLevel"
-                className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
-                required
-              >
+              <select name="positionLevel" className="mt-1 w-full rounded-md border px-3 py-2 text-sm" required>
                 <option value="">- เลือก -</option>
                 {PositionLevels.map((lv) => (
                   <option key={lv} value={lv}>
@@ -227,7 +209,6 @@ export default function ManageUserDepartmentsDialog({
           </form>
         </section>
 
-        {/* Active */}
         <Section title={`กำลังใช้งาน (${active.length})`}>
           {active.map((x) => (
             <Row
@@ -242,7 +223,6 @@ export default function ManageUserDepartmentsDialog({
           {!active.length && <EmptyRow text="ยังไม่มีสังกัดที่ใช้งาน" />}
         </Section>
 
-        {/* Ended */}
         <Section title={`สิ้นสุดแล้ว (${ended.length})`} muted>
           {ended.map((x) => (
             <Row key={x.id} x={x} ended onApply={applyLevel} />
@@ -259,13 +239,7 @@ export default function ManageUserDepartmentsDialog({
 function Section({ title, muted = false, children }) {
   return (
     <section className="rounded-lg border overflow-hidden mb-4">
-      <div
-        className={`px-3 py-2 ${
-          muted ? "bg-neutral-50" : "bg-sky-50"
-        } text-sm font-medium`}
-      >
-        {title}
-      </div>
+      <div className={`px-3 py-2 ${muted ? "bg-neutral-50" : "bg-sky-50"} text-sm font-medium`}>{title}</div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-neutral-50">
@@ -294,8 +268,7 @@ function Row({ x, ended, onApply, onSetPrimary, onEnd }) {
   }, [x.positionLevel, x.positionName]);
 
   const dept = x.department;
-  const changed =
-    toLevel !== x.positionLevel || (pname || "") !== (x.positionName || "");
+  const changed = toLevel !== x.positionLevel || (pname || "") !== (x.positionName || "");
 
   return (
     <tr className="border-t align-top">
@@ -342,9 +315,7 @@ function Row({ x, ended, onApply, onSetPrimary, onEnd }) {
             </button>
           )}
         </div>
-        {x.isPrimary && (
-          <div className="mt-1 text-[11px] text-green-700">Primary</div>
-        )}
+        {x.isPrimary && <div className="mt-1 text-[11px] text-green-700">Primary</div>}
       </Td>
 
       <Td>{new Date(x.startedAt).toLocaleDateString()}</Td>
@@ -388,22 +359,13 @@ function EmptyRow({ text }) {
   );
 }
 
-/* --- table cells --- */
 function Th({ children, right }) {
   return (
-    <th
-      className={`px-3 py-2 ${
-        right ? "text-right" : "text-left"
-      } text-[13px] font-semibold text-neutral-700`}
-    >
+    <th className={`px-3 py-2 ${right ? "text-right" : "text-left"} text-[13px] font-semibold text-neutral-700`}>
       {children}
     </th>
   );
 }
 function Td({ children, className = "", right }) {
-  return (
-    <td className={`px-3 py-2 ${right ? "text-right" : ""} ${className}`}>
-      {children}
-    </td>
-  );
+  return <td className={`px-3 py-2 ${right ? "text-right" : ""} ${className}`}>{children}</td>;
 }

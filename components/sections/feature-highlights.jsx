@@ -3,7 +3,7 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 import { PointerHighlight } from "@/components/ui/pointer-highlight";
 import {
   IconBolt,

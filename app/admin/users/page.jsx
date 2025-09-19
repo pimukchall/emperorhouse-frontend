@@ -12,7 +12,6 @@ import ManageUserDepartmentsDialog from "./ManageUserDepartmentsDialog";
 
 const PAGE_SIZE = 20;
 
-// ดึงรายละเอียดผู้ใช้แบบเต็ม (รวม role / primaryUserDept / ชื่อ ฯลฯ)
 async function fetchUserDetail(id) {
   return apiFetch(`/api/users/${id}`);
 }
@@ -21,28 +20,23 @@ export default function AdminUsersPage() {
   const { user, loading } = useAuth();
   const isAdmin = hasRole(user, "admin");
 
-  // อ้างอิงมาสเตอร์
   const [roles, setRoles] = useState([]);
   const [departments, setDepartments] = useState([]);
 
-  // ฟิลเตอร์
   const [q, setQ] = useState("");
   const [roleId, setRoleId] = useState("");
   const [departmentId, setDepartmentId] = useState("");
   const [includeDeleted, setIncludeDeleted] = useState(false);
 
-  // ลิสต์
   const [page, setPage] = useState(1);
   const [items, setItems] = useState([]);
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  // จัดการหลายแผนก/ตำแหน่ง
   const [deptOpen, setDeptOpen] = useState(false);
   const [deptUser, setDeptUser] = useState(null);
 
-  // ฟอร์มผู้ใช้
   const [form, setForm] = useState({
     id: null,
     email: "",
@@ -58,13 +52,11 @@ export default function AdminUsersPage() {
   const isEditing = useMemo(() => form.id !== null, [form.id]);
 
   useEffect(() => {
-    // ถ้าต้องกันสิทธิ์ เขียน redirect ที่นี่ได้
     if (!loading && !isAdmin) {
-      // e.g. router.push("/")
+      // redirect ตาม UX
     }
   }, [loading, isAdmin]);
 
-  // โหลดมาสเตอร์
   async function loadRef() {
     try {
       const [r1, r2] = await Promise.all([
@@ -73,12 +65,9 @@ export default function AdminUsersPage() {
       ]);
       setRoles(r1?.data || []);
       setDepartments(r2?.data || []);
-    } catch {
-      /* ignore */
-    }
+    } catch {}
   }
 
-  // โหลดรายการผู้ใช้ตามฟิลเตอร์
   async function load() {
     setBusy(true);
     try {
@@ -106,7 +95,6 @@ export default function AdminUsersPage() {
   useEffect(() => { loadRef(); }, []);
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [q, roleId, departmentId, includeDeleted, page]);
 
-  // ฟอร์ม: เคลียร์
   function resetForm() {
     setForm({
       id: null,
@@ -122,7 +110,6 @@ export default function AdminUsersPage() {
     });
   }
 
-  // ฟอร์ม: บันทึก
   async function handleSubmit(e) {
     e.preventDefault();
     setBusy(true);
@@ -166,7 +153,6 @@ export default function AdminUsersPage() {
     }
   }
 
-  // กดแก้ไข: ดึงรายละเอียดเต็มก่อน
   async function handleEdit(u) {
     try {
       const detail = await fetchUserDetail(u.id);
@@ -189,7 +175,6 @@ export default function AdminUsersPage() {
     }
   }
 
-  // ลบ/คืนค่า/ลบถาวร
   async function handleToggleDelete(u, hard = false) {
     if (hard) {
       if (!confirm(`ลบถาวรผู้ใช้ ${u.email}?`)) return;
@@ -207,7 +192,6 @@ export default function AdminUsersPage() {
     }
   }
 
-  // รีเซ็ตรหัสผ่าน
   async function handleResetPassword(u) {
     const newPassword = prompt("ตั้งรหัสผ่านใหม่ (อย่างน้อย 8 ตัว)");
     if (!newPassword) return;
@@ -222,7 +206,6 @@ export default function AdminUsersPage() {
     }
   }
 
-  // เปิด/ปิด dialog จัดการหลายแผนก
   function openManageDepts(u) {
     setDeptUser(u);
     setDeptOpen(true);
@@ -242,10 +225,8 @@ export default function AdminUsersPage() {
         <h1 className="text-2xl font-semibold">Admin · Users</h1>
       </header>
 
-      {/* แถบตัวกรอง */}
       <FiltersBar roles={roles} departments={departments} filters={filters} />
 
-      {/* ฟอร์มสร้าง/แก้ไข */}
       <section className="rounded-xl border p-4">
         <h2 className="font-medium mb-3">{isEditing ? "แก้ไขผู้ใช้" : "สร้างผู้ใช้ใหม่"}</h2>
         <UserForm
@@ -259,7 +240,6 @@ export default function AdminUsersPage() {
         />
       </section>
 
-      {/* ตารางรายการ */}
       <UsersTable
         items={items}
         meta={meta}
@@ -275,7 +255,6 @@ export default function AdminUsersPage() {
 
       <ErrorDialog open={!!error} message={error} onClose={() => setError("")} />
 
-      {/* จัดการหลายแผนก/ตำแหน่ง */}
       <ManageUserDepartmentsDialog
         open={deptOpen}
         onClose={() => setDeptOpen(false)}

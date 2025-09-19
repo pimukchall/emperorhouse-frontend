@@ -24,7 +24,7 @@ export default function AdminDepartmentsPage() {
 
   useEffect(() => {
     if (!loading && !isAdmin) {
-      // ถ้าไม่ใช่แอดมิน ให้เด้งออก / แสดง error ตาม UX ของคุณ
+      // guard/redirect
     }
   }, [loading, isAdmin]);
 
@@ -41,10 +41,7 @@ export default function AdminDepartmentsPage() {
     }
   }
 
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, page]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [q, page]);
 
   function resetForm() {
     setForm({ id: null, code: "", nameTh: "", nameEn: "" });
@@ -54,17 +51,16 @@ export default function AdminDepartmentsPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      if (isEditing) {
-        await apiFetch(`/api/departments/${form.id}`, {
-          method: "PATCH",
-          body: { code: form.code, nameTh: form.nameTh, nameEn: form.nameEn || null },
-        });
-      } else {
-        await apiFetch(`/api/departments`, {
-          method: "POST",
-          body: { code: form.code, nameTh: form.nameTh, nameEn: form.nameEn || null },
-        });
-      }
+      // ✅ upsert ผ่าน POST /api/departments (ถ้ามี id -> update, ถ้าไม่มี -> create)
+      await apiFetch(`/api/departments`, {
+        method: "POST",
+        body: {
+          id: form.id ?? undefined,
+          code: form.code,
+          nameTh: form.nameTh,
+          nameEn: form.nameEn || null,
+        },
+      });
       resetForm();
       load();
     } catch (e) {
@@ -98,16 +94,12 @@ export default function AdminDepartmentsPage() {
             value={q}
             onChange={(e) => { setPage(1); setQ(e.target.value); }}
           />
-          <button
-            className="border rounded-md px-3 py-1.5 text-sm"
-            onClick={() => { setQ(""); setPage(1); }}
-          >
+          <button className="border rounded-md px-3 py-1.5 text-sm" onClick={() => { setQ(""); setPage(1); }}>
             ล้าง
           </button>
         </div>
       </header>
 
-      {/* Form create / edit */}
       <section className="rounded-xl border p-4">
         <h2 className="font-medium mb-3">{isEditing ? "แก้ไขแผนก" : "เพิ่มแผนกใหม่"}</h2>
         <form className="grid gap-3 sm:grid-cols-3" onSubmit={onSubmit}>
@@ -154,7 +146,6 @@ export default function AdminDepartmentsPage() {
         </form>
       </section>
 
-      {/* Table */}
       <section className="rounded-xl border">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -194,7 +185,6 @@ export default function AdminDepartmentsPage() {
           </table>
         </div>
 
-        {/* Pagination */}
         <div className="flex items-center justify-between p-3">
           <div className="text-xs text-neutral-500">ทั้งหมด {meta.total} รายการ</div>
           <div className="flex gap-2">

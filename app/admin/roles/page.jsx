@@ -24,7 +24,7 @@ export default function AdminRolesPage() {
 
   useEffect(() => {
     if (!loading && !isAdmin) {
-      // redirect/guard ตาม UX ของคุณ
+      // guard/redirect
     }
   }, [loading, isAdmin]);
 
@@ -41,10 +41,7 @@ export default function AdminRolesPage() {
     }
   }
 
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, page]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [q, page]);
 
   function resetForm() {
     setForm({ id: null, name: "", labelTh: "", labelEn: "" });
@@ -54,11 +51,8 @@ export default function AdminRolesPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      if (isEditing) {
-        await apiFetch(`/api/roles/${form.id}`, { method: "PATCH", body: form });
-      } else {
-        await apiFetch(`/api/roles`, { method: "POST", body: form });
-      }
+      // ✅ ใช้ upsert แบบ POST /api/roles (ทั้งเพิ่มและแก้ โดยยึด name เป็น unique)
+      await apiFetch(`/api/roles`, { method: "POST", body: { name: form.name, labelTh: form.labelTh, labelEn: form.labelEn } });
       resetForm();
       load();
     } catch (e) {
@@ -68,11 +62,12 @@ export default function AdminRolesPage() {
     }
   }
 
-  async function onDelete(id) {
+  async function onDelete(name) {
     if (!confirm("ลบ role นี้?")) return;
     setBusy(true);
     try {
-      await apiFetch(`/api/roles/${id}`, { method: "DELETE" });
+      // ✅ ลบตาม name
+      await apiFetch(`/api/roles/${encodeURIComponent(name)}`, { method: "DELETE" });
       load();
     } catch (e) {
       setError(e?.data?.error || e?.message || "ลบไม่สำเร็จ");
@@ -171,7 +166,7 @@ export default function AdminRolesPage() {
                     >
                       Edit
                     </button>
-                    <button className="px-2 py-1 text-red-600" onClick={() => onDelete(r.id)}>
+                    <button className="px-2 py-1 text-red-600" onClick={() => onDelete(r.name)}>
                       Delete
                     </button>
                   </td>
@@ -184,7 +179,6 @@ export default function AdminRolesPage() {
           </table>
         </div>
 
-        {/* Pagination */}
         <div className="flex items-center justify-between p-3">
           <div className="text-xs text-neutral-500">ทั้งหมด {meta.total} รายการ</div>
           <div className="flex gap-2">

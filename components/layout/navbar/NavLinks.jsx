@@ -172,6 +172,7 @@ function AdminDropdown() {
         <DropdownItem href="/admin/roles"       icon={Shield}    label="Roles" />
         <DropdownItem href="/admin/users"       icon={Users}     label="Users" />
         <DropdownItem href="/admin/contacts"    icon={Mail}      label="Contacts" />
+        <DropdownItem href="/admin/organizations" icon={ClipboardList} label="Organizations" />
       </div>
     </div>
   );

@@ -172,6 +172,7 @@ export function MobileMenu({ open, onClose }) {
                 { label: "Roles",       href: "/admin/roles",       icon: Shield },
                 { label: "Users",       href: "/admin/users",       icon: Users },
                 { label: "Contacts",    href: "/admin/contacts",    icon: Mail },
+                { label: "Organizations", href: "/admin/organizations", icon: ClipboardList },
               ]}
             />
           )}

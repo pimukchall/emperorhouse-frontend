@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import { apiUrl, apiFetch } from "../lib/api";
 
-// ----- helpers (export ชื่อพวกนี้ไว้ให้ component อื่นใช้) -----
+// ----- helpers -----
 export function hasRole(userOrRoleName, roleNameMaybe) {
   const ctx = typeof userOrRoleName === "string" ? useAuth() : null;
   const user = typeof userOrRoleName === "string" ? ctx.user : userOrRoleName;
@@ -28,7 +28,6 @@ export function inDepartment(user, deptCode) {
   return code === String(deptCode || "").toUpperCase();
 }
 
-// ----- Context -----
 const AuthCtx = createContext(null);
 export function useAuth() {
   const v = useContext(AuthCtx);
@@ -42,20 +41,16 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const accessTokenRef = useRef(null);
 
-  // normalize /auth/me response
   function normalizeMe(payload) {
-    // แบบเก่า: { ok, data }
     if (payload && typeof payload === "object" && "data" in payload) {
       return { ok: !!payload.ok, isAuthenticated: true, user: payload.data };
     }
-    // แบบใหม่: { ok, isAuthenticated, user }
     if (payload && typeof payload === "object" && "isAuthenticated" in payload) {
       return payload;
     }
     return { ok: false, isAuthenticated: false, user: null };
-  }
+    }
 
-  // โหลด me ตอน mount
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -103,14 +98,11 @@ export function AuthProvider({ children }) {
       if (!j?.ok) throw new Error(j?.error || "Login failed");
       accessTokenRef.current = j.accessToken || null;
 
-      // ถ้า backend ส่ง user มากับ login ใช้เลย
       if (j.user) {
         setUser(j.user);
         setIsAuthenticated(true);
         return true;
       }
-
-      // fallback: ดึง me
       const meRaw = await apiFetch("/auth/me");
       const me = normalizeMe(meRaw);
       setUser(me.user || null);

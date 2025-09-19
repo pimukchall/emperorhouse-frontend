@@ -48,6 +48,16 @@ export default function AdminUsersPage() {
     roleId: "",
     departmentId: "",
     password: "",
+
+    // ใหม่
+    employeeCode: "",
+    employeeType: "",
+    contractType: "",
+    gender: "",
+    birthDate: "",
+    startDate: "",
+    probationEndDate: "",
+    resignedAt: "",
   });
   const isEditing = useMemo(() => form.id !== null, [form.id]);
 
@@ -107,6 +117,15 @@ export default function AdminUsersPage() {
       roleId: roles.find(r => r.name?.toLowerCase() === "user")?.id || "",
       departmentId: "",
       password: "",
+
+      employeeCode: "",
+      employeeType: "",
+      contractType: "",
+      gender: "",
+      birthDate: "",
+      startDate: "",
+      probationEndDate: "",
+      resignedAt: "",
     });
   }
 
@@ -119,13 +138,22 @@ export default function AdminUsersPage() {
           method: "PATCH",
           body: {
             email: form.email,
-            firstNameTh: form.firstNameTh,
-            lastNameTh: form.lastNameTh,
-            firstNameEn: form.firstNameEn,
-            lastNameEn: form.lastNameEn,
+            name: form.name || "",
+            firstNameTh: form.firstNameTh || "",
+            lastNameTh: form.lastNameTh || "",
+            firstNameEn: form.firstNameEn || "",
+            lastNameEn: form.lastNameEn || "",
             roleId: form.roleId ? Number(form.roleId) : undefined,
             departmentId: form.departmentId ? Number(form.departmentId) : undefined,
-            name: form.name || "",
+
+            employeeCode: form.employeeCode || null,
+            employeeType: form.employeeType || null,
+            contractType: form.contractType || null,
+            gender: form.gender || null,
+            birthDate: form.birthDate || null,
+            startDate: form.startDate || null,
+            probationEndDate: form.probationEndDate || null,
+            resignedAt: form.resignedAt || null,
           },
         });
       } else {
@@ -141,6 +169,15 @@ export default function AdminUsersPage() {
             lastNameEn: form.lastNameEn || "",
             roleId: Number(form.roleId),
             departmentId: Number(form.departmentId),
+
+            employeeCode: form.employeeCode || null,
+            employeeType: form.employeeType || null,
+            contractType: form.contractType || null,
+            gender: form.gender || null,
+            birthDate: form.birthDate || null,
+            startDate: form.startDate || null,
+            probationEndDate: form.probationEndDate || null,
+            resignedAt: form.resignedAt || null,
           },
         });
       }
@@ -168,6 +205,15 @@ export default function AdminUsersPage() {
         roleId: d.role?.id || "",
         departmentId: d.primaryUserDept?.department?.id || "",
         password: "",
+
+        employeeCode: d.employeeCode || "",
+        employeeType: d.employeeType || "",
+        contractType: d.contractType || "",
+        gender: d.gender || "",
+        birthDate: d.birthDate ? d.birthDate.substring(0,10) : "",
+        startDate: d.startDate ? d.startDate.substring(0,10) : "",
+        probationEndDate: d.probationEndDate ? d.probationEndDate.substring(0,10) : "",
+        resignedAt: d.resignedAt ? d.resignedAt.substring(0,10) : "",
       });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {

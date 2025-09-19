@@ -29,7 +29,10 @@ export default function UsersTable({
           <tbody>
             {items.map((u) => {
               const pri = u.primaryUserDept;
-              const others = (u.userDepartments || []).filter((d) => d.id !== pri?.id);
+              // ✅ แสดงเฉพาะสังกัดที่ยัง active เท่านั้น
+              const others = (u.userDepartments || [])
+                .filter((d) => d.id !== pri?.id && !d.endedAt);
+
               return (
                 <tr key={u.id} className="border-t align-top hover:bg-neutral-50/60">
                   <Td>{u.id}</Td>

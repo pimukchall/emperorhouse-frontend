@@ -1,5 +1,26 @@
 "use client";
 
+const EMPLOYEE_TYPES = [
+  { value: "", label: "- ไม่ระบุ -" },
+  { value: "DAILY", label: "DAILY (รายวัน)" },
+  { value: "MONTHLY", label: "MONTHLY (รายเดือน)" },
+];
+
+const CONTRACT_TYPES = [
+  { value: "", label: "- ไม่ระบุ -" },
+  { value: "PERMANENT", label: "PERMANENT (ประจำ)" },
+  { value: "TEMPORARY", label: "TEMPORARY (ชั่วคราว)" },
+  { value: "PROBATION", label: "PROBATION (ทดลองงาน)" },
+];
+
+// ✅ ใช้ ENUM เป็นตัวพิมพ์ใหญ่ให้ตรงกับ DB
+const GENDERS = [
+  { value: "", label: "- ไม่ระบุ -" },
+  { value: "MALE", label: "ชาย" },
+  { value: "FEMALE", label: "หญิง" },
+  { value: "OTHER", label: "อื่น ๆ" },
+];
+
 export default function UserForm({
   roles = [],
   departments = [],
@@ -11,6 +32,7 @@ export default function UserForm({
 }) {
   return (
     <form className="grid gap-3 sm:grid-cols-3" onSubmit={onSubmit}>
+      {/* login */}
       <label className="block sm:col-span-1">
         <div className="text-xs">อีเมล</div>
         <input
@@ -43,6 +65,7 @@ export default function UserForm({
         />
       </label>
 
+      {/* ชื่อ */}
       <label className="block">
         <div className="text-xs">ชื่อ (ไทย)</div>
         <input
@@ -76,6 +99,98 @@ export default function UserForm({
         />
       </label>
 
+      {/* ฟิลด์งานบุคคล */}
+      <label className="block">
+        <div className="text-xs">Employee Code</div>
+        <input
+          value={form.employeeCode}
+          onChange={(e) => setForm({ ...form, employeeCode: e.target.value })}
+          className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+          placeholder="รหัสพนักงาน"
+        />
+      </label>
+
+      {/* Dropdown ENUM */}
+      <label className="block">
+        <div className="text-xs">Employee Type</div>
+        <select
+          value={form.employeeType ?? ""}
+          onChange={(e) => setForm({ ...form, employeeType: e.target.value || "" })}
+          className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+        >
+          {EMPLOYEE_TYPES.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </label>
+
+      <label className="block">
+        <div className="text-xs">Contract Type</div>
+        <select
+          value={form.contractType ?? ""}
+          onChange={(e) => setForm({ ...form, contractType: e.target.value || "" })}
+          className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+        >
+          {CONTRACT_TYPES.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </label>
+
+      <label className="block">
+        <div className="text-xs">Gender</div>
+        <select
+          value={form.gender ?? ""}
+          onChange={(e) => setForm({ ...form, gender: e.target.value })}
+          className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+        >
+          {GENDERS.map((g) => (
+            <option key={g.value} value={g.value}>{g.label}</option>
+          ))}
+        </select>
+      </label>
+
+      <label className="block">
+        <div className="text-xs">Birth Date</div>
+        <input
+          type="date"
+          value={form.birthDate}
+          onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
+          className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+        />
+      </label>
+
+      <label className="block">
+        <div className="text-xs">Start Date</div>
+        <input
+          type="date"
+          value={form.startDate}
+          onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+          className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+        />
+      </label>
+
+      <label className="block">
+        <div className="text-xs">Probation End</div>
+        <input
+          type="date"
+          value={form.probationEndDate}
+          onChange={(e) => setForm({ ...form, probationEndDate: e.target.value })}
+          className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+        />
+      </label>
+
+      <label className="block">
+        <div className="text-xs">Resigned At</div>
+        <input
+          type="date"
+          value={form.resignedAt}
+          onChange={(e) => setForm({ ...form, resignedAt: e.target.value })}
+          className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+        />
+      </label>
+
+      {/* role / department */}
       <label className="block">
         <div className="text-xs">Role</div>
         <select
@@ -97,7 +212,7 @@ export default function UserForm({
           value={form.departmentId}
           onChange={(e) => setForm({ ...form, departmentId: e.target.value })}
           className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
-          required
+          required={!isEditing}
         >
           <option value="">- เลือก -</option>
           {departments.map((d) => (

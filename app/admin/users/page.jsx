@@ -22,6 +22,7 @@ export default function AdminUsersPage() {
 
   const [roles, setRoles] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [organizations, setOrganizations] = useState([]);
 
   const [q, setQ] = useState("");
   const [roleId, setRoleId] = useState("");
@@ -48,8 +49,9 @@ export default function AdminUsersPage() {
     roleId: "",
     departmentId: "",
     password: "",
-
-    // ใหม่
+    // HR
+    orgId: "",        // เก็บเป็น string เสมอ
+    orgLabel: "",     // label ไว้ใช้ทำ fallback option
     employeeCode: "",
     employeeType: "",
     contractType: "",
@@ -63,7 +65,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     if (!loading && !isAdmin) {
-      // redirect ตาม UX
+      // redirect ถ้าต้องการ
     }
   }, [loading, isAdmin]);
 
@@ -75,7 +77,13 @@ export default function AdminUsersPage() {
       ]);
       setRoles(r1?.data || []);
       setDepartments(r2?.data || []);
-    } catch {}
+    } catch (_) {}
+    try {
+      const r3 = await apiFetch(`/api/organizations?page=1&limit=999`);
+      setOrganizations(r3?.data || []);
+    } catch (_) {
+      setOrganizations([]); // ถ้ายังไม่เปิด route ก็ปล่อยว่างได้
+    }
   }
 
   async function load() {
@@ -117,7 +125,8 @@ export default function AdminUsersPage() {
       roleId: roles.find(r => r.name?.toLowerCase() === "user")?.id || "",
       departmentId: "",
       password: "",
-
+      orgId: "",
+      orgLabel: "",
       employeeCode: "",
       employeeType: "",
       contractType: "",
@@ -145,6 +154,7 @@ export default function AdminUsersPage() {
             lastNameEn: form.lastNameEn || "",
             roleId: form.roleId ? Number(form.roleId) : undefined,
             departmentId: form.departmentId ? Number(form.departmentId) : undefined,
+            orgId: form.orgId ? Number(form.orgId) : null,
 
             employeeCode: form.employeeCode || null,
             employeeType: form.employeeType || null,
@@ -169,6 +179,7 @@ export default function AdminUsersPage() {
             lastNameEn: form.lastNameEn || "",
             roleId: Number(form.roleId),
             departmentId: Number(form.departmentId),
+            orgId: form.orgId ? Number(form.orgId) : null,
 
             employeeCode: form.employeeCode || null,
             employeeType: form.employeeType || null,
@@ -194,6 +205,12 @@ export default function AdminUsersPage() {
     try {
       const detail = await fetchUserDetail(u.id);
       const d = detail?.data || u;
+      const orgIdStr = d.organization?.id ? String(d.organization.id) : "";
+      const orgLabel =
+        d.organization
+          ? `${d.organization.code ? d.organization.code + " · " : ""}${d.organization.nameTh || d.organization.nameEn || `Org#${d.organization.id}`}`
+          : "";
+
       setForm({
         id: d.id,
         email: d.email || "",
@@ -205,6 +222,8 @@ export default function AdminUsersPage() {
         roleId: d.role?.id || "",
         departmentId: d.primaryUserDept?.department?.id || "",
         password: "",
+        orgId: orgIdStr,     // เก็บเป็น string
+        orgLabel,            // เก็บ label ไว้ fallback
 
         employeeCode: d.employeeCode || "",
         employeeType: d.employeeType || "",
@@ -238,12 +257,27 @@ export default function AdminUsersPage() {
     }
   }
 
+  async function handleRestore(u) {
+    setBusy(true);
+    try {
+      await apiFetch(`/api/users/${u.id}/restore`, { method: "POST" });
+      load();
+    } catch (e) {
+      setError(e?.data?.error || e?.message || "กู้คืนไม่สำเร็จ");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleResetPassword(u) {
     const newPassword = prompt("ตั้งรหัสผ่านใหม่ (อย่างน้อย 8 ตัว)");
     if (!newPassword) return;
     setBusy(true);
     try {
-      await apiFetch(`/api/users/${u.id}/reset-password`, { method: "POST", body: { newPassword } });
+      await apiFetch(`/api/users/${u.id}/reset-password`, {
+        method: "POST",
+        body: { newPassword },
+      });
       alert("รีเซ็ตรหัสผ่านแล้ว");
     } catch (e) {
       setError(e?.data?.error || e?.message || "รีเซ็ตรหัสผ่านไม่สำเร็จ");
@@ -262,7 +296,13 @@ export default function AdminUsersPage() {
     roleId, setRoleId,
     departmentId, setDepartmentId,
     includeDeleted, setIncludeDeleted,
-    onClear: () => { setQ(""); setRoleId(""); setDepartmentId(""); setIncludeDeleted(false); setPage(1); }
+    onClear: () => {
+      setQ("");
+      setRoleId("");
+      setDepartmentId("");
+      setIncludeDeleted(false);
+      setPage(1);
+    },
   };
 
   return (
@@ -274,10 +314,11 @@ export default function AdminUsersPage() {
       <FiltersBar roles={roles} departments={departments} filters={filters} />
 
       <section className="rounded-xl border p-4">
-        <h2 className="font-medium mb-3">{isEditing ? "แก้ไขผู้ใช้" : "สร้างผู้ใช้ใหม่"}</h2>
+        <h2 className="mb-3 font-medium">{isEditing ? "แก้ไขผู้ใช้" : "สร้างผู้ใช้ใหม่"}</h2>
         <UserForm
           roles={roles}
           departments={departments}
+          organizations={organizations}
           form={form}
           setForm={setForm}
           isEditing={isEditing}
@@ -293,7 +334,7 @@ export default function AdminUsersPage() {
         setPage={setPage}
         onEdit={handleEdit}
         onSoftDelete={(u) => handleToggleDelete(u, false)}
-        onRestore={(u) => handleToggleDelete(u, false)}
+        onRestore={handleRestore}
         onHardDelete={(u) => handleToggleDelete(u, true)}
         onResetPassword={handleResetPassword}
         onManageDepts={openManageDepts}

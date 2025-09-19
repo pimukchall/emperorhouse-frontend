@@ -18,6 +18,7 @@ export default function FiltersBar({ roles = [], departments = [], filters }) {
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
+
         <select
           className="border rounded-md px-2 py-1.5 text-sm"
           value={roleId}
@@ -28,6 +29,7 @@ export default function FiltersBar({ roles = [], departments = [], filters }) {
             <option key={r.id} value={r.id}>{r.name}</option>
           ))}
         </select>
+
         <select
           className="border rounded-md px-2 py-1.5 text-sm"
           value={departmentId}
@@ -35,14 +37,28 @@ export default function FiltersBar({ roles = [], departments = [], filters }) {
         >
           <option value="">ทุกแผนก</option>
           {departments.map((d) => (
-            <option key={d.id} value={d.id}>{d.code} · {d.nameTh}</option>
+            <option key={d.id} value={d.id}>
+              {d.code} · {d.nameTh || d.nameEn || `Dept#${d.id}`}
+            </option>
           ))}
         </select>
+
         <label className="inline-flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={includeDeleted} onChange={(e) => setIncludeDeleted(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={includeDeleted}
+            onChange={(e) => setIncludeDeleted(e.target.checked)}
+          />
           แสดงที่ถูกลบ (soft)
         </label>
-        <button className="border rounded-md px-3 py-1.5 text-sm" onClick={onClear}>ล้าง</button>
+
+        <button
+          type="button"
+          className="border rounded-md px-3 py-1.5 text-sm"
+          onClick={onClear}
+        >
+          ล้าง
+        </button>
       </div>
     </section>
   );

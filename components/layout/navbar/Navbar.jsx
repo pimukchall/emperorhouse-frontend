@@ -58,7 +58,7 @@ export default function Navbar() {
                 name={user?.name}
                 email={user?.email}
                 fetchUrl={
-                  user?.id ? `/api/files/avatar/${user.id}` : undefined
+                  user?.id ? `/profile/files/user/avatar/${user.id}` : undefined
                 }
               />
             )}

@@ -13,7 +13,6 @@ const CONTRACT_TYPES = [
   { value: "PROBATION", label: "PROBATION (ทดลองงาน)" },
 ];
 
-// ✅ ใช้ ENUM เป็นตัวพิมพ์ใหญ่ให้ตรงกับ DB
 const GENDERS = [
   { value: "", label: "- ไม่ระบุ -" },
   { value: "MALE", label: "ชาย" },
@@ -24,12 +23,18 @@ const GENDERS = [
 export default function UserForm({
   roles = [],
   departments = [],
+  organizations = [],
   form,
   setForm,
   isEditing,
   onSubmit,
   onCancel,
 }) {
+  // ตรวจว่ามี option ของ orgId ปัจจุบันในรายการไหม
+  const hasCurrentOrg =
+    form.orgId &&
+    organizations.some((o) => String(o.id) === String(form.orgId));
+
   return (
     <form className="grid gap-3 sm:grid-cols-3" onSubmit={onSubmit}>
       {/* login */}
@@ -106,11 +111,36 @@ export default function UserForm({
           value={form.employeeCode}
           onChange={(e) => setForm({ ...form, employeeCode: e.target.value })}
           className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
-          placeholder="รหัสพนักงาน"
+          placeholder="ถ้าเว้นว่าง ระบบจะสร้างให้อัตโนมัติ"
         />
       </label>
 
-      {/* Dropdown ENUM */}
+      {/* Organization */}
+      <label className="block">
+        <div className="text-xs">Organization</div>
+        <select
+          value={form.orgId ?? ""}
+          onChange={(e) => setForm({ ...form, orgId: e.target.value || "" })}
+          className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+        >
+          <option value="">- ไม่ระบุ -</option>
+
+          {/* fallback option ถ้ายังไม่มีใน organizations */}
+          {!hasCurrentOrg && form.orgId && (
+            <option value={String(form.orgId)}>
+              {form.orgLabel || `Org#${form.orgId}`}
+            </option>
+          )}
+
+          {organizations.map((o) => (
+            <option key={o.id} value={String(o.id)}>
+              {o.code ? `${o.code} · ` : ""}{o.nameTh || o.nameEn || `Org#${o.id}`}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {/* ENUMs */}
       <label className="block">
         <div className="text-xs">Employee Type</div>
         <select
@@ -150,6 +180,7 @@ export default function UserForm({
         </select>
       </label>
 
+      {/* Dates */}
       <label className="block">
         <div className="text-xs">Birth Date</div>
         <input
@@ -201,7 +232,7 @@ export default function UserForm({
         >
           <option value="">- เลือก -</option>
           {roles.map((r) => (
-            <option key={r.id} value={r.id}>{r.name}</option>
+            <option key={r.id} value={String(r.id)}>{r.name}</option>
           ))}
         </select>
       </label>
@@ -216,7 +247,9 @@ export default function UserForm({
         >
           <option value="">- เลือก -</option>
           {departments.map((d) => (
-            <option key={d.id} value={d.id}>{d.code} · {d.nameTh}</option>
+            <option key={d.id} value={String(d.id)}>
+              {d.code} · {d.nameTh || d.nameEn || `Dept#${d.id}`}
+            </option>
           ))}
         </select>
       </label>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { apiUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { UserRound } from "lucide-react";
@@ -11,10 +11,7 @@ function initialsFrom(name, email) {
   const src = (name && name.trim()) || (email && email.split("@")[0]) || "";
   if (!src) return "?";
   const parts = src.split(/\s+/).filter(Boolean);
-  const pick =
-    parts.length >= 2
-      ? parts[0][0] + parts[parts.length - 1][0]
-      : src.slice(0, 2);
+  const pick = parts.length >= 2 ? parts[0][0] + parts[parts.length - 1][0] : src.slice(0, 2);
   return pick.toUpperCase();
 }
 
@@ -22,81 +19,104 @@ export default function AvatarButton({
   href = "/profile",
   name,
   email,
-  photo,
-  fetchUrl = null,
+  photo,          // อาจเป็น URL ภายนอก
+  fetchUrl = null, // เช่น `/profile/files/user/avatar/:id`
   onClick,
   className,
-  fallback = "icon",
-  version,
+  fallback = "icon", // "icon" | "initials"
+  version,           // ใช้ cache-bust
 }) {
-  const [autoPhoto, setAutoPhoto] = useState(null);
+  const [autoPhoto, setAutoPhoto] = useState(null); // blob: URL จาก fetch
   const [imgError, setImgError] = useState(false);
-  const currentBlobUrl = useRef(null); // เก็บ blob URL ปัจจุบัน
-  const urlsToRevoke = useRef([]); // คิวสำหรับ revoke ทีหลังอย่างปลอดภัย
 
-  // โหลดรูปอัตโนมัติเมื่อไม่มี photo ที่ส่งมา
+  const currentBlobUrl = useRef(null);
+  const urlsToRevoke = useRef([]);
+
+  // ทำ URL สำหรับ cache-busting
+  const photoWithTs = useMemo(() => {
+    if (!photo) return null;
+    try {
+      const u = new URL(photo, typeof window !== "undefined" ? window.location.origin : "http://localhost");
+      if (version) u.searchParams.set("ts", String(version));
+      return u.toString();
+    } catch {
+      // photo เป็น path สั้น ๆ
+      const hasQ = photo.includes("?");
+      return version ? `${photo}${hasQ ? "&" : "?"}ts=${encodeURIComponent(String(version))}` : photo;
+    }
+  }, [photo, version]);
+
+  // โหลดรูปอัตโนมัติ (ต้องใช้ fetch เป็น blob เพื่อส่ง cookies ไปด้วย)
   useEffect(() => {
     let aborted = false;
     const ctrl = new AbortController();
 
     async function load() {
       setImgError(false);
-      if (photo || !fetchUrl) return;
+      if (photoWithTs || !fetchUrl) return;
+
       try {
-        const r = await fetch(apiUrl(fetchUrl), {
+        // เติม ts เพื่อกันแคช
+        const hasQ = fetchUrl.includes("?");
+        const url = apiUrl(`${fetchUrl}${version ? `${hasQ ? "&" : "?"}ts=${encodeURIComponent(String(version))}` : ""}`);
+
+        const r = await fetch(url, {
           signal: ctrl.signal,
           cache: "no-store",
           credentials: "include",
         });
-        if (!r.ok) return;
-        const b = await r.blob();
-        const url = URL.createObjectURL(b);
-
-        if (!aborted) {
-          // อย่า revoke ทันที—อาจยังโหลดไม่เสร็จ (StrictMode dev จะยิ่งชน)
-          // เก็บ URL เดิมไว้ในคิว รอ revoke ตอนหลังจากรูปใหม่ onLoad หรือ unmount
-          if (currentBlobUrl.current)
-            urlsToRevoke.current.push(currentBlobUrl.current);
-          currentBlobUrl.current = url;
-          setAutoPhoto(url);
-        } else {
-          URL.revokeObjectURL(url);
+        if (!r.ok) {
+          // 401/404/500 ฯลฯ
+          setImgError(true);
+          return;
         }
+
+        const ct = r.headers.get("content-type") || "";
+        if (!ct.toLowerCase().startsWith("image/")) {
+          // บางที backend ส่ง JSON error มา
+          setImgError(true);
+          return;
+        }
+
+        const b = await r.blob();
+        if (aborted) return;
+        const blobUrl = URL.createObjectURL(b);
+
+        // เก็บตัวเก่าไว้คิว รอ revoke หลังจากรูปใหม่โหลดสำเร็จ (onLoad)
+        if (currentBlobUrl.current) urlsToRevoke.current.push(currentBlobUrl.current);
+        currentBlobUrl.current = blobUrl;
+        setAutoPhoto(blobUrl);
       } catch {
-        // ให้ fallback ทำงาน
+        if (!aborted) setImgError(true);
       }
     }
 
     load();
+
     return () => {
       aborted = true;
       ctrl.abort();
-      // cleanup ตอน unmount: revoke ทุก URL ที่ค้าง
       if (currentBlobUrl.current) {
         urlsToRevoke.current.push(currentBlobUrl.current);
         currentBlobUrl.current = null;
       }
       while (urlsToRevoke.current.length) {
         const u = urlsToRevoke.current.pop();
-        try {
-          URL.revokeObjectURL(u);
-        } catch {}
+        try { URL.revokeObjectURL(u); } catch {}
       }
     };
-  }, [photo, fetchUrl, version]);
+  }, [photoWithTs, fetchUrl, version]);
 
-  const resolved = !imgError ? photo ?? autoPhoto : null;
+  const resolved = !imgError ? (photoWithTs ?? autoPhoto) : null;
   const isBlob = typeof resolved === "string" && resolved.startsWith("blob:");
   const showIconFallback = !resolved && fallback === "icon";
   const showInitialsFallback = !resolved && fallback === "initials";
 
   const handleLoaded = useCallback(() => {
-    // เมื่อรูปใหม่โหลดเสร็จ ค่อย revoke URL เก่าที่ค้างในคิว
+    // เมื่อรูปใหม่โหลดสำเร็จ ค่อย revoke ของเก่าที่ค้าง
     while (urlsToRevoke.current.length) {
       const u = urlsToRevoke.current.pop();
-      try {
-        URL.revokeObjectURL(u);
-      } catch {}
+      try { URL.revokeObjectURL(u); } catch {}
     }
   }, []);
 
@@ -115,17 +135,16 @@ export default function AvatarButton({
     >
       {resolved ? (
         isBlob ? (
-          // ใช้ <img> ธรรมดาเมื่อเป็น blob: เพื่อเลี่ยง behavior ของ <Image>
-          // และเรียก handleLoaded เพื่อ revoke URL เก่าหลังโหลดเสร็จ
           <img
             src={resolved}
             alt={name || email || "avatar"}
             className="h-full w-full object-cover"
+            referrerPolicy="no-referrer"
+            crossOrigin="anonymous"
             onLoad={handleLoaded}
             onError={() => setImgError(true)}
           />
         ) : (
-          // รูปจาก URL ปกติ/ไฟล์ static
           <Image
             src={resolved}
             alt={name || email || "avatar"}
@@ -134,6 +153,7 @@ export default function AvatarButton({
             sizes="36px"
             priority
             unoptimized
+            referrerPolicy="no-referrer"
             onLoadingComplete={handleLoaded}
             onError={() => setImgError(true)}
           />

@@ -14,6 +14,13 @@ async function fetchUserDetail(id) {
   return apiFetch(`/api/users/${id}`);
 }
 
+// helper: ตัดค่าว่างออกจาก payload
+function n(v) {
+  if (v === undefined || v === null) return undefined;
+  if (typeof v === "string" && v.trim() === "") return undefined;
+  return v;
+}
+
 export default function AdminUsersPage() {
   const { user, loading } = useAuth();
   const isAdmin = hasRole(user, "admin");
@@ -62,7 +69,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     if (!loading && !isAdmin) {
-      // ถ้าต้อง guard/redirect ตรงนี้ (ขึ้นกับแอปของคุณ)
+      // TODO: redirect/guard ถ้าจำเป็น
     }
   }, [loading, isAdmin]);
 
@@ -100,6 +107,7 @@ export default function AdminUsersPage() {
       const res = await apiFetch(`/api/users?${params.toString()}`);
       setItems(res?.data || []);
       setMeta(res?.meta || { page: 1, pages: 1, total: 0 });
+      setError("");
     } catch (e) {
       setError(e?.data?.error || e?.message || "โหลดข้อมูลไม่สำเร็จ");
     } finally {
@@ -111,57 +119,83 @@ export default function AdminUsersPage() {
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [q, roleId, departmentId, includeDeleted, page]);
 
   function resetForm() {
-    setForm({
-      id: null, email: "", name: "",
-      firstNameTh: "", lastNameTh: "", firstNameEn: "", lastNameEn: "",
+    setForm((s) => ({
+      ...s,
+      id: null,
+      email: "",
+      name: "",
+      firstNameTh: "",
+      lastNameTh: "",
+      firstNameEn: "",
+      lastNameEn: "",
       roleId: roles.find(r => r.name?.toLowerCase() === "user")?.id || "",
-      departmentId: "", password: "",
-      orgId: "", orgLabel: "",
-      employeeCode: "", employeeType: "", contractType: "", gender: "",
-      birthDate: "", startDate: "", probationEndDate: "", resignedAt: "",
-    });
+      departmentId: "",
+      password: "",
+      orgId: "",
+      orgLabel: "",
+      employeeCode: "",
+      employeeType: "",
+      contractType: "",
+      gender: "",
+      birthDate: "",
+      startDate: "",
+      probationEndDate: "",
+      resignedAt: "",
+    }));
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // ✅ validate ขั้นต่ำ + sanitize payload
+  function buildPayload() {
+    const requiredMsg = [];
+    if (!form.email) requiredMsg.push("อีเมล");
+    if (!isEditing && (!form.password || form.password.length < 8)) requiredMsg.push("รหัสผ่าน (อย่างน้อย 8 ตัว)");
+    if (!form.roleId) requiredMsg.push("Role");
+    if (!form.departmentId) requiredMsg.push("Department");
+
+    if (requiredMsg.length) {
+      throw new Error(`กรุณากรอก: ${requiredMsg.join(", ")}`);
+    }
+
+    const payload = {
+      email: form.email,
+      name: n(form.name),
+      firstNameTh: n(form.firstNameTh),
+      lastNameTh: n(form.lastNameTh),
+      firstNameEn: n(form.firstNameEn),
+      lastNameEn: n(form.lastNameEn),
+      roleId: Number(form.roleId),
+      departmentId: Number(form.departmentId),
+      orgId: n(form.orgId) ? Number(form.orgId) : undefined,
+      employeeCode: n(form.employeeCode) ?? null,
+      employeeType: n(form.employeeType) ?? null,
+      contractType: n(form.contractType) ?? null,
+      gender: n(form.gender) ?? null,
+      birthDate: n(form.birthDate) ?? null,
+      startDate: n(form.startDate) ?? null,
+      probationEndDate: n(form.probationEndDate) ?? null,
+      resignedAt: n(form.resignedAt) ?? null,
+    };
+
+    if (!isEditing) {
+      payload.password = form.password; // สร้างใหม่ต้องส่ง
+    }
+
+    return payload;
   }
 
   async function handleSubmit(e) {
     e.preventDefault(); setBusy(true);
     try {
+      const payload = buildPayload();
       if (isEditing) {
-        await apiFetch(`/api/users/${form.id}`, {
-          method: "PATCH",
-          body: {
-            email: form.email, name: form.name || "",
-            firstNameTh: form.firstNameTh || "", lastNameTh: form.lastNameTh || "",
-            firstNameEn: form.firstNameEn || "", lastNameEn: form.lastNameEn || "",
-            roleId: form.roleId ? Number(form.roleId) : undefined,
-            departmentId: form.departmentId ? Number(form.departmentId) : undefined,
-            orgId: form.orgId ? Number(form.orgId) : null,
-            employeeCode: form.employeeCode || null, employeeType: form.employeeType || null,
-            contractType: form.contractType || null, gender: form.gender || null,
-            birthDate: form.birthDate || null, startDate: form.startDate || null,
-            probationEndDate: form.probationEndDate || null, resignedAt: form.resignedAt || null,
-          },
-        });
+        await apiFetch(`/api/users/${form.id}`, { method: "PATCH", body: payload });
       } else {
-        await apiFetch(`/api/users`, {
-          method: "POST",
-          body: {
-            email: form.email, password: form.password || undefined,
-            name: form.name || "",
-            firstNameTh: form.firstNameTh || "", lastNameTh: form.lastNameTh || "",
-            firstNameEn: form.firstNameEn || "", lastNameEn: form.lastNameEn || "",
-            roleId: Number(form.roleId), departmentId: Number(form.departmentId),
-            orgId: form.orgId ? Number(form.orgId) : null,
-            employeeCode: form.employeeCode || null, employeeType: form.employeeType || null,
-            contractType: form.contractType || null, gender: form.gender || null,
-            birthDate: form.birthDate || null, startDate: form.startDate || null,
-            probationEndDate: form.probationEndDate || null, resignedAt: form.resignedAt || null,
-          },
-        });
+        await apiFetch(`/api/users`, { method: "POST", body: payload });
       }
       resetForm(); load();
-    } catch (e) {
-      setError(e?.data?.error || e?.message || "บันทึกไม่สำเร็จ");
+    } catch (e2) {
+      setError(e2?.data?.error || e2?.message || "บันทึกไม่สำเร็จ");
     } finally { setBusy(false); }
   }
 
@@ -171,20 +205,33 @@ export default function AdminUsersPage() {
       const d = detail?.data || u;
       const orgIdStr = d.organization?.id ? String(d.organization.id) : "";
       const orgLabel =
-        d.organization ? `${d.organization.code ? d.organization.code + " · " : ""}${d.organization.nameTh || d.organization.nameEn || `Org#${d.organization.id}`}` : "";
+        d.organization
+          ? `${d.organization.code ? d.organization.code + " · " : ""}${
+              d.organization.nameTh || d.organization.nameEn || `Org#${d.organization.id}`
+            }`
+          : "";
 
       setForm({
-        id: d.id, email: d.email || "", name: d.name || "",
-        firstNameTh: d.firstNameTh || "", lastNameTh: d.lastNameTh || "",
-        firstNameEn: d.firstNameEn || "", lastNameEn: d.lastNameEn || "",
-        roleId: d.role?.id || "", departmentId: d.primaryUserDept?.department?.id || "",
-        password: "", orgId: orgIdStr, orgLabel,
-        employeeCode: d.employeeCode || "", employeeType: d.employeeType || "",
-        contractType: d.contractType || "", gender: d.gender || "",
-        birthDate: d.birthDate ? d.birthDate.substring(0,10) : "",
-        startDate: d.startDate ? d.startDate.substring(0,10) : "",
-        probationEndDate: d.probationEndDate ? d.probationEndDate.substring(0,10) : "",
-        resignedAt: d.resignedAt ? d.resignedAt.substring(0,10) : "",
+        id: d.id,
+        email: d.email || "",
+        name: d.name || "",
+        firstNameTh: d.firstNameTh || "",
+        lastNameTh: d.lastNameTh || "",
+        firstNameEn: d.firstNameEn || "",
+        lastNameEn: d.lastNameEn || "",
+        roleId: d.role?.id || "",
+        departmentId: d.primaryUserDept?.department?.id || "",
+        password: "",
+        orgId: orgIdStr,
+        orgLabel,
+        employeeCode: d.employeeCode || "",
+        employeeType: d.employeeType || "",
+        contractType: d.contractType || "",
+        gender: d.gender || "",
+        birthDate: d.birthDate ? d.birthDate.substring(0, 10) : "",
+        startDate: d.startDate ? d.startDate.substring(0, 10) : "",
+        probationEndDate: d.probationEndDate ? d.probationEndDate.substring(0, 10) : "",
+        resignedAt: d.resignedAt ? d.resignedAt.substring(0, 10) : "",
       });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
@@ -226,17 +273,22 @@ export default function AdminUsersPage() {
     onClear: () => { setQ(""); setRoleId(""); setDepartmentId(""); setIncludeDeleted(false); setPage(1); },
   };
 
+  // ✅ canSubmit สำหรับส่งให้ปุ่มในฟอร์ม
+  const canSubmit = Boolean(
+    form.email &&
+    (isEditing || (form.password && form.password.length >= 8)) &&
+    form.roleId &&
+    form.departmentId
+  );
+
   return (
     <main className="pt-20 px-4 sm:px-6 lg:px-8 max-w-screen-xl mx-auto space-y-4">
-      {/* หัวข้อ */}
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-semibold text-neutral-800 dark:text-neutral-100">Users</h1>
       </header>
 
-      {/* ฟิลเตอร์ */}
       <FiltersBar roles={roles} departments={departments} filters={filters} />
 
-      {/* ฟอร์ม */}
       <section className="rounded-xl border dark:border-neutral-700 bg-white dark:bg-neutral-900 p-4">
         <h2 className="font-medium mb-3 text-neutral-800 dark:text-neutral-100">{isEditing ? "แก้ไขผู้ใช้" : "เพิ่มผู้ใช้ใหม่"}</h2>
         <UserForm
@@ -248,10 +300,10 @@ export default function AdminUsersPage() {
           isEditing={isEditing}
           onSubmit={handleSubmit}
           onCancel={resetForm}
+          canSubmit={canSubmit}
         />
       </section>
 
-      {/* ตาราง */}
       <UsersTable
         items={items}
         meta={meta}
@@ -265,7 +317,6 @@ export default function AdminUsersPage() {
         onManageDepts={openManageDepts}
       />
 
-      {/* จัดการสังกัด */}
       <ManageUserDepartmentsDialog
         open={deptOpen}
         onClose={() => setDeptOpen(false)}

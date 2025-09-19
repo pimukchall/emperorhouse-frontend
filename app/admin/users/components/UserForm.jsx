@@ -28,23 +28,36 @@ export default function UserForm({
   isEditing,
   onSubmit,
   onCancel,
+  canSubmit = true,
 }) {
   const hasCurrentOrg = form.orgId && organizations.some((o) => String(o.id) === String(form.orgId));
   const cx = "mt-1 w-full rounded-md border px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100";
+  const note = "text-[11px] text-neutral-500 dark:text-neutral-400 mt-1";
+
+  const needPassword = !isEditing;
+
+  const emailInvalid = !form.email;
+  const passwordInvalid = needPassword && (!form.password || form.password.length < 8);
+  const roleInvalid = !form.roleId;
+  const deptInvalid = !form.departmentId;
 
   return (
     <form className="grid gap-3 sm:grid-cols-3" onSubmit={onSubmit}>
       {/* Login */}
       <label className="block">
-        <div className="text-xs text-neutral-600 dark:text-neutral-300">อีเมล</div>
+        <div className="text-xs text-neutral-600 dark:text-neutral-300">อีเมล <span className="text-rose-600">*</span></div>
         <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={cx} required />
+        {emailInvalid && <div className={note}>ต้องกรอกอีเมล</div>}
       </label>
-      {!isEditing && (
+
+      {needPassword && (
         <label className="block">
-          <div className="text-xs text-neutral-600 dark:text-neutral-300">รหัสผ่านเริ่มต้น</div>
-          <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={cx} placeholder="อย่างน้อย 8 ตัว" />
+          <div className="text-xs text-neutral-600 dark:text-neutral-300">รหัสผ่านเริ่มต้น <span className="text-rose-600">*</span></div>
+          <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={cx} placeholder="อย่างน้อย 8 ตัว" required />
+          {passwordInvalid && <div className={note}>อย่างน้อย 8 ตัวอักษร</div>}
         </label>
       )}
+
       <label className="block">
         <div className="text-xs text-neutral-600 dark:text-neutral-300">ชื่อที่แสดง (nickname)</div>
         <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={cx} />
@@ -125,25 +138,31 @@ export default function UserForm({
         <input type="date" value={form.resignedAt} onChange={(e) => setForm({ ...form, resignedAt: e.target.value })} className={cx} />
       </label>
 
-      {/* role / department */}
+      {/* role / department — required */}
       <label className="block">
-        <div className="text-xs text-neutral-600 dark:text-neutral-300">Role</div>
+        <div className="text-xs text-neutral-600 dark:text-neutral-300">Role <span className="text-rose-600">*</span></div>
         <select value={form.roleId} onChange={(e) => setForm({ ...form, roleId: e.target.value })} className={cx} required>
           <option value="">- เลือก -</option>
           {roles.map((r) => <option key={r.id} value={String(r.id)}>{r.name}</option>)}
         </select>
+        {roleInvalid && <div className={note}>ต้องเลือก Role</div>}
       </label>
       <label className="block">
-        <div className="text-xs text-neutral-600 dark:text-neutral-300">Department (Primary)</div>
+        <div className="text-xs text-neutral-600 dark:text-neutral-300">Department (Primary) <span className="text-rose-600">*</span></div>
         <select value={form.departmentId} onChange={(e) => setForm({ ...form, departmentId: e.target.value })} className={cx} required>
           <option value="">- เลือก -</option>
           {departments.map((d) => <option key={d.id} value={String(d.id)}>{d.code} · {d.nameTh || d.nameEn || `Dept#${d.id}`}</option>)}
         </select>
+        {deptInvalid && <div className={note}>ต้องเลือก Department</div>}
       </label>
 
       {/* actions */}
       <div className="sm:col-span-3 flex gap-2">
-        <button type="submit" className="h-9 px-4 rounded-md bg-black text-white dark:bg-white dark:text-black hover:opacity-90">
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="h-9 px-4 rounded-md bg-black text-white dark:bg-white dark:text-black hover:opacity-90 disabled:opacity-50"
+        >
           {isEditing ? "บันทึกการแก้ไข" : "เพิ่ม"}
         </button>
         <button type="button" onClick={onCancel} className="h-9 px-4 rounded-md border dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800">

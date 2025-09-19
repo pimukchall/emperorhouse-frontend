@@ -1,8 +1,6 @@
 "use client";
-
 import React, { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import ErrorDialog from "@/components/modal/ErrorDialog";
 import { useAuth, hasRole } from "@/providers/local-auth";
 
 import FiltersBar from "./components/FiltersBar";
@@ -49,9 +47,8 @@ export default function AdminUsersPage() {
     roleId: "",
     departmentId: "",
     password: "",
-    // HR
-    orgId: "",        // เก็บเป็น string เสมอ
-    orgLabel: "",     // label ไว้ใช้ทำ fallback option
+    orgId: "",
+    orgLabel: "",
     employeeCode: "",
     employeeType: "",
     contractType: "",
@@ -65,7 +62,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     if (!loading && !isAdmin) {
-      // redirect ถ้าต้องการ
+      // ถ้าต้อง guard/redirect ตรงนี้ (ขึ้นกับแอปของคุณ)
     }
   }, [loading, isAdmin]);
 
@@ -77,12 +74,12 @@ export default function AdminUsersPage() {
       ]);
       setRoles(r1?.data || []);
       setDepartments(r2?.data || []);
-    } catch (_) {}
+    } catch {}
     try {
       const r3 = await apiFetch(`/api/organizations?page=1&limit=999`);
       setOrganizations(r3?.data || []);
-    } catch (_) {
-      setOrganizations([]); // ถ้ายังไม่เปิด route ก็ปล่อยว่างได้
+    } catch {
+      setOrganizations([]);
     }
   }
 
@@ -115,90 +112,57 @@ export default function AdminUsersPage() {
 
   function resetForm() {
     setForm({
-      id: null,
-      email: "",
-      name: "",
-      firstNameTh: "",
-      lastNameTh: "",
-      firstNameEn: "",
-      lastNameEn: "",
+      id: null, email: "", name: "",
+      firstNameTh: "", lastNameTh: "", firstNameEn: "", lastNameEn: "",
       roleId: roles.find(r => r.name?.toLowerCase() === "user")?.id || "",
-      departmentId: "",
-      password: "",
-      orgId: "",
-      orgLabel: "",
-      employeeCode: "",
-      employeeType: "",
-      contractType: "",
-      gender: "",
-      birthDate: "",
-      startDate: "",
-      probationEndDate: "",
-      resignedAt: "",
+      departmentId: "", password: "",
+      orgId: "", orgLabel: "",
+      employeeCode: "", employeeType: "", contractType: "", gender: "",
+      birthDate: "", startDate: "", probationEndDate: "", resignedAt: "",
     });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function handleSubmit(e) {
-    e.preventDefault();
-    setBusy(true);
+    e.preventDefault(); setBusy(true);
     try {
       if (isEditing) {
         await apiFetch(`/api/users/${form.id}`, {
           method: "PATCH",
           body: {
-            email: form.email,
-            name: form.name || "",
-            firstNameTh: form.firstNameTh || "",
-            lastNameTh: form.lastNameTh || "",
-            firstNameEn: form.firstNameEn || "",
-            lastNameEn: form.lastNameEn || "",
+            email: form.email, name: form.name || "",
+            firstNameTh: form.firstNameTh || "", lastNameTh: form.lastNameTh || "",
+            firstNameEn: form.firstNameEn || "", lastNameEn: form.lastNameEn || "",
             roleId: form.roleId ? Number(form.roleId) : undefined,
             departmentId: form.departmentId ? Number(form.departmentId) : undefined,
             orgId: form.orgId ? Number(form.orgId) : null,
-
-            employeeCode: form.employeeCode || null,
-            employeeType: form.employeeType || null,
-            contractType: form.contractType || null,
-            gender: form.gender || null,
-            birthDate: form.birthDate || null,
-            startDate: form.startDate || null,
-            probationEndDate: form.probationEndDate || null,
-            resignedAt: form.resignedAt || null,
+            employeeCode: form.employeeCode || null, employeeType: form.employeeType || null,
+            contractType: form.contractType || null, gender: form.gender || null,
+            birthDate: form.birthDate || null, startDate: form.startDate || null,
+            probationEndDate: form.probationEndDate || null, resignedAt: form.resignedAt || null,
           },
         });
       } else {
         await apiFetch(`/api/users`, {
           method: "POST",
           body: {
-            email: form.email,
-            password: form.password || undefined,
+            email: form.email, password: form.password || undefined,
             name: form.name || "",
-            firstNameTh: form.firstNameTh || "",
-            lastNameTh: form.lastNameTh || "",
-            firstNameEn: form.firstNameEn || "",
-            lastNameEn: form.lastNameEn || "",
-            roleId: Number(form.roleId),
-            departmentId: Number(form.departmentId),
+            firstNameTh: form.firstNameTh || "", lastNameTh: form.lastNameTh || "",
+            firstNameEn: form.firstNameEn || "", lastNameEn: form.lastNameEn || "",
+            roleId: Number(form.roleId), departmentId: Number(form.departmentId),
             orgId: form.orgId ? Number(form.orgId) : null,
-
-            employeeCode: form.employeeCode || null,
-            employeeType: form.employeeType || null,
-            contractType: form.contractType || null,
-            gender: form.gender || null,
-            birthDate: form.birthDate || null,
-            startDate: form.startDate || null,
-            probationEndDate: form.probationEndDate || null,
-            resignedAt: form.resignedAt || null,
+            employeeCode: form.employeeCode || null, employeeType: form.employeeType || null,
+            contractType: form.contractType || null, gender: form.gender || null,
+            birthDate: form.birthDate || null, startDate: form.startDate || null,
+            probationEndDate: form.probationEndDate || null, resignedAt: form.resignedAt || null,
           },
         });
       }
-      resetForm();
-      load();
+      resetForm(); load();
     } catch (e) {
       setError(e?.data?.error || e?.message || "บันทึกไม่สำเร็จ");
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   async function handleEdit(u) {
@@ -207,28 +171,16 @@ export default function AdminUsersPage() {
       const d = detail?.data || u;
       const orgIdStr = d.organization?.id ? String(d.organization.id) : "";
       const orgLabel =
-        d.organization
-          ? `${d.organization.code ? d.organization.code + " · " : ""}${d.organization.nameTh || d.organization.nameEn || `Org#${d.organization.id}`}`
-          : "";
+        d.organization ? `${d.organization.code ? d.organization.code + " · " : ""}${d.organization.nameTh || d.organization.nameEn || `Org#${d.organization.id}`}` : "";
 
       setForm({
-        id: d.id,
-        email: d.email || "",
-        name: d.name || "",
-        firstNameTh: d.firstNameTh || "",
-        lastNameTh: d.lastNameTh || "",
-        firstNameEn: d.firstNameEn || "",
-        lastNameEn: d.lastNameEn || "",
-        roleId: d.role?.id || "",
-        departmentId: d.primaryUserDept?.department?.id || "",
-        password: "",
-        orgId: orgIdStr,     // เก็บเป็น string
-        orgLabel,            // เก็บ label ไว้ fallback
-
-        employeeCode: d.employeeCode || "",
-        employeeType: d.employeeType || "",
-        contractType: d.contractType || "",
-        gender: d.gender || "",
+        id: d.id, email: d.email || "", name: d.name || "",
+        firstNameTh: d.firstNameTh || "", lastNameTh: d.lastNameTh || "",
+        firstNameEn: d.firstNameEn || "", lastNameEn: d.lastNameEn || "",
+        roleId: d.role?.id || "", departmentId: d.primaryUserDept?.department?.id || "",
+        password: "", orgId: orgIdStr, orgLabel,
+        employeeCode: d.employeeCode || "", employeeType: d.employeeType || "",
+        contractType: d.contractType || "", gender: d.gender || "",
         birthDate: d.birthDate ? d.birthDate.substring(0,10) : "",
         startDate: d.startDate ? d.startDate.substring(0,10) : "",
         probationEndDate: d.probationEndDate ? d.probationEndDate.substring(0,10) : "",
@@ -241,80 +193,52 @@ export default function AdminUsersPage() {
   }
 
   async function handleToggleDelete(u, hard = false) {
-    if (hard) {
-      if (!confirm(`ลบถาวรผู้ใช้ ${u.email}?`)) return;
-    } else if (!u.deletedAt) {
-      if (!confirm(`ลบผู้ใช้ ${u.email}? (soft delete)`)) return;
-    }
+    if (hard ? !confirm(`ลบถาวรผู้ใช้ ${u.email}?`) : (!u.deletedAt && !confirm(`ลบผู้ใช้ ${u.email}? (soft delete)`))) return;
     setBusy(true);
     try {
       await apiFetch(`/api/users/${u.id}${hard ? "?hard=1" : ""}`, { method: "DELETE" });
       load();
     } catch (e) {
       setError(e?.data?.error || e?.message || "ทำรายการไม่สำเร็จ");
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   async function handleRestore(u) {
     setBusy(true);
-    try {
-      await apiFetch(`/api/users/${u.id}/restore`, { method: "POST" });
-      load();
-    } catch (e) {
-      setError(e?.data?.error || e?.message || "กู้คืนไม่สำเร็จ");
-    } finally {
-      setBusy(false);
-    }
+    try { await apiFetch(`/api/users/${u.id}/restore`, { method: "POST" }); load(); }
+    catch (e) { setError(e?.data?.error || e?.message || "กู้คืนไม่สำเร็จ"); }
+    finally { setBusy(false); }
   }
 
   async function handleResetPassword(u) {
-    const newPassword = prompt("ตั้งรหัสผ่านใหม่ (อย่างน้อย 8 ตัว)");
-    if (!newPassword) return;
+    const newPassword = prompt("ตั้งรหัสผ่านใหม่ (อย่างน้อย 8 ตัว)"); if (!newPassword) return;
     setBusy(true);
-    try {
-      await apiFetch(`/api/users/${u.id}/reset-password`, {
-        method: "POST",
-        body: { newPassword },
-      });
-      alert("รีเซ็ตรหัสผ่านแล้ว");
-    } catch (e) {
-      setError(e?.data?.error || e?.message || "รีเซ็ตรหัสผ่านไม่สำเร็จ");
-    } finally {
-      setBusy(false);
-    }
+    try { await apiFetch(`/api/users/${u.id}/reset-password`, { method: "POST", body: { newPassword } }); alert("รีเซ็ตรหัสผ่านแล้ว"); }
+    catch (e) { setError(e?.data?.error || e?.message || "รีเซ็ตรหัสผ่านไม่สำเร็จ"); }
+    finally { setBusy(false); }
   }
 
-  function openManageDepts(u) {
-    setDeptUser(u);
-    setDeptOpen(true);
-  }
+  function openManageDepts(u) { setDeptUser(u); setDeptOpen(true); }
 
   const filters = {
-    q, setQ,
-    roleId, setRoleId,
-    departmentId, setDepartmentId,
+    q, setQ, roleId, setRoleId, departmentId, setDepartmentId,
     includeDeleted, setIncludeDeleted,
-    onClear: () => {
-      setQ("");
-      setRoleId("");
-      setDepartmentId("");
-      setIncludeDeleted(false);
-      setPage(1);
-    },
+    onClear: () => { setQ(""); setRoleId(""); setDepartmentId(""); setIncludeDeleted(false); setPage(1); },
   };
 
   return (
-    <main className="mx-auto max-w-6xl p-6 space-y-8">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Admin · Users</h1>
+    <main className="pt-20 px-4 sm:px-6 lg:px-8 max-w-screen-xl mx-auto space-y-4">
+      {/* หัวข้อ */}
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-semibold text-neutral-800 dark:text-neutral-100">Users</h1>
       </header>
 
+      {/* ฟิลเตอร์ */}
       <FiltersBar roles={roles} departments={departments} filters={filters} />
 
-      <section className="rounded-xl border p-4">
-        <h2 className="mb-3 font-medium">{isEditing ? "แก้ไขผู้ใช้" : "สร้างผู้ใช้ใหม่"}</h2>
+      {/* ฟอร์ม */}
+      <section className="rounded-xl border dark:border-neutral-700 bg-white dark:bg-neutral-900 p-4">
+        <h2 className="font-medium mb-3 text-neutral-800 dark:text-neutral-100">{isEditing ? "แก้ไขผู้ใช้" : "เพิ่มผู้ใช้ใหม่"}</h2>
         <UserForm
           roles={roles}
           departments={departments}
@@ -327,6 +251,7 @@ export default function AdminUsersPage() {
         />
       </section>
 
+      {/* ตาราง */}
       <UsersTable
         items={items}
         meta={meta}
@@ -340,8 +265,7 @@ export default function AdminUsersPage() {
         onManageDepts={openManageDepts}
       />
 
-      <ErrorDialog open={!!error} message={error} onClose={() => setError("")} />
-
+      {/* จัดการสังกัด */}
       <ManageUserDepartmentsDialog
         open={deptOpen}
         onClose={() => setDeptOpen(false)}
@@ -349,6 +273,12 @@ export default function AdminUsersPage() {
         departments={departments}
         onChanged={() => load()}
       />
+
+      {!!error && (
+        <div className="rounded-md border border-rose-300 bg-rose-50 dark:bg-rose-900/20 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-300">
+          {error}
+        </div>
+      )}
     </main>
   );
 }

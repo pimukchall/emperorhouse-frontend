@@ -8,18 +8,32 @@ import { useAuth, hasRole } from "@/providers/local-auth";
 
 const PAGE_SIZE = 20;
 
+// ปุ่มโทน Ghost ให้ใช้งานซ้ำได้
+function GhostButton({ children, className = "", ...rest }) {
+  return (
+    <button
+      className={`px-3 py-1.5 rounded-md border dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 ${className}`}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function AdminContactsPage() {
   const { user, loading } = useAuth();
   const isAdmin = hasRole(user, "admin");
 
   const [items, setItems] = useState([]);
   const [meta, setMeta] = useState({ page: 1, pages: 1, total: 0 });
+
   const [q, setQ] = useState("");
   const [email, setEmail] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState("desc");
+
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -27,7 +41,7 @@ export default function AdminContactsPage() {
 
   useEffect(() => {
     if (!loading && !isAdmin) {
-      // guard/redirect
+      // TODO: guard/redirect ถ้าจำเป็น
     }
   }, [loading, isAdmin]);
 
@@ -47,6 +61,7 @@ export default function AdminContactsPage() {
       const res = await apiFetch(`/api/contacts?${params.toString()}`);
       setItems(res?.data || []);
       setMeta(res?.meta || { page: 1, pages: 1, total: 0 });
+      setError("");
     } catch (e) {
       setError(e?.data?.error || e?.message || "โหลดข้อมูลไม่สำเร็จ");
     } finally {
@@ -82,42 +97,124 @@ export default function AdminContactsPage() {
     }
   }
 
+  const inputCx =
+    "w-full rounded-md border px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100";
+
   return (
-    <main className="mx-auto max-w-5xl p-6 py-30 space-y-8">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Admin · Contacts</h1>
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            placeholder="ค้นหา ชื่อ/หัวข้อ/ข้อความ"
-            className="border rounded-md px-3 py-1.5 text-sm"
-            value={q}
-            onChange={(e) => { setPage(1); setQ(e.target.value); }}
-          />
-          <input
-            placeholder="Email"
-            className="border rounded-md px-3 py-1.5 text-sm"
-            value={email}
-            onChange={(e) => { setPage(1); setEmail(e.target.value); }}
-          />
-          <input type="date" className="border rounded-md px-3 py-1.5 text-sm" value={dateFrom} onChange={(e) => { setPage(1); setDateFrom(e.target.value); }} />
-          <input type="date" className="border rounded-md px-3 py-1.5 text-sm" value={dateTo} onChange={(e) => { setPage(1); setDateTo(e.target.value); }} />
-          <select className="border rounded-md px-2 py-1.5 text-sm" value={sort} onChange={(e) => setSort(e.target.value)}>
-            <option value="desc">ใหม่ → เก่า</option>
-            <option value="asc">เก่า → ใหม่</option>
-          </select>
-          <button className="border rounded-md px-3 py-1.5 text-sm" onClick={() => { setQ(""); setEmail(""); setDateFrom(""); setDateTo(""); setPage(1); }}>
-            ล้าง
-          </button>
+    <main className="pt-20 px-4 sm:px-6 lg:px-8 max-w-screen-xl mx-auto space-y-4">
+      {/* Header + Filters */}
+      <header className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h1 className="text-xl sm:text-2xl font-semibold text-neutral-800 dark:text-neutral-100">
+            Admin · Contacts
+          </h1>
         </div>
+
+        <section className="rounded-xl border dark:border-neutral-700 bg-white dark:bg-neutral-900 p-4">
+          <div className="grid gap-3 sm:grid-cols-6">
+            <label className="sm:col-span-2">
+              <div className="text-xs text-neutral-600 dark:text-neutral-300">
+                ค้นหา (ชื่อ/หัวข้อ/ข้อความ)
+              </div>
+              <input
+                placeholder="พิมพ์คำค้น…"
+                className={inputCx}
+                value={q}
+                onChange={(e) => {
+                  setPage(1);
+                  setQ(e.target.value);
+                }}
+              />
+            </label>
+
+            <label className="sm:col-span-2">
+              <div className="text-xs text-neutral-600 dark:text-neutral-300">
+                Email
+              </div>
+              <input
+                placeholder="someone@example.com"
+                className={inputCx}
+                value={email}
+                onChange={(e) => {
+                  setPage(1);
+                  setEmail(e.target.value);
+                }}
+              />
+            </label>
+
+            <label className="sm:col-span-1">
+              <div className="text-xs text-neutral-600 dark:text-neutral-300">
+                จากวันที่
+              </div>
+              <input
+                type="date"
+                className={inputCx}
+                value={dateFrom}
+                onChange={(e) => {
+                  setPage(1);
+                  setDateFrom(e.target.value);
+                }}
+              />
+            </label>
+
+            <label className="sm:col-span-1">
+              <div className="text-xs text-neutral-600 dark:text-neutral-300">
+                ถึงวันที่
+              </div>
+              <input
+                type="date"
+                className={inputCx}
+                value={dateTo}
+                onChange={(e) => {
+                  setPage(1);
+                  setDateTo(e.target.value);
+                }}
+              />
+            </label>
+
+            <label className="sm:col-span-2">
+              <div className="text-xs text-neutral-600 dark:text-neutral-300">
+                เรียงลำดับ
+              </div>
+              <select
+                className={inputCx}
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+              >
+                <option value="desc">ใหม่ → เก่า</option>
+                <option value="asc">เก่า → ใหม่</option>
+              </select>
+            </label>
+
+            <div className="sm:col-span-4 flex items-end gap-2">
+              <GhostButton
+                onClick={() => {
+                  setQ("");
+                  setEmail("");
+                  setDateFrom("");
+                  setDateTo("");
+                  setPage(1);
+                }}
+              >
+                ล้างตัวกรอง
+              </GhostButton>
+              {busy && (
+                <span className="text-xs text-neutral-500">กำลังโหลด…</span>
+              )}
+            </div>
+          </div>
+        </section>
       </header>
 
-      <section className="rounded-xl border overflow-hidden">
+      {/* Master / Detail */}
+      <section className="rounded-xl border dark:border-neutral-700 overflow-hidden bg-white dark:bg-neutral-900">
         <div className="grid grid-cols-1 md:grid-cols-2">
-          <div className="border-r">
+          {/* List */}
+          <div className="border-b md:border-b-0 md:border-r dark:border-neutral-700">
             <div className="max-h-[70vh] overflow-auto">
               <table className="w-full text-sm">
-                <thead className="bg-neutral-50 sticky top-0">
-                  <tr>
+                <thead className="bg-neutral-100 dark:bg-neutral-800 sticky top-0 z-10">
+                  <tr className="text-neutral-700 dark:text-neutral-200">
                     <th className="px-3 py-2 text-left">เมื่อ</th>
                     <th className="px-3 py-2 text-left">อีเมล</th>
                     <th className="px-3 py-2 text-left">หัวข้อ</th>
@@ -125,55 +222,113 @@ export default function AdminContactsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((it) => (
-                    <tr key={it.id} className="border-t">
-                      <td className="px-3 py-2">{new Date(it.createdAt).toLocaleString()}</td>
-                      <td className="px-3 py-2">{it.email}</td>
-                      <td className="px-3 py-2">{it.subject}</td>
-                      <td className="px-3 py-2 text-right">
-                        <button className="px-2 py-1 text-blue-600" onClick={() => onOpen(it.id)}>View</button>
-                        <button className="px-2 py-1 text-red-600" onClick={() => onDelete(it.id)}>Delete</button>
+                  {items.length ? (
+                    items.map((it, idx) => (
+                      <tr
+                        key={it.id}
+                        className={`border-t dark:border-neutral-700 ${
+                          idx % 2 === 0
+                            ? "bg-neutral-50 dark:bg-neutral-900/50"
+                            : ""
+                        } hover:bg-neutral-100 dark:hover:bg-neutral-800`}
+                      >
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {new Date(it.createdAt).toLocaleString()}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {it.email}
+                        </td>
+                        <td className="px-3 py-2">{it.subject}</td>
+                        <td className="px-3 py-2 text-right">
+                          <div className="flex flex-wrap gap-1 justify-end">
+                            <GhostButton
+                              className="text-blue-700"
+                              onClick={() => onOpen(it.id)}
+                            >
+                              View
+                            </GhostButton>
+                            <GhostButton
+                              className="text-rose-700"
+                              onClick={() => onDelete(it.id)}
+                            >
+                              Delete
+                            </GhostButton>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-3 py-6 text-center text-neutral-500"
+                      >
+                        ไม่พบข้อมูล
                       </td>
                     </tr>
-                  ))}
-                  {!items.length && (
-                    <tr><td colSpan={4} className="px-3 py-6 text-center text-neutral-500">ไม่พบข้อมูล</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
 
-            <div className="flex items-center justify-between p-3 border-t">
-              <div className="text-xs text-neutral-500">ทั้งหมด {meta.total} รายการ</div>
+            <div className="flex items-center justify-between p-3 border-t dark:border-neutral-700">
+              <div className="text-xs text-neutral-500">
+                ทั้งหมด {meta.total} รายการ
+              </div>
               <div className="flex gap-2">
-                <button className="border rounded-md px-3 py-1.5 text-sm disabled:opacity-50" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+                <GhostButton
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                >
                   Prev
-                </button>
-                <div className="text-sm">Page {meta.page} / {meta.pages || 1}</div>
-                <button className="border rounded-md px-3 py-1.5 text-sm disabled:opacity-50" disabled={page >= (meta.pages || 1)} onClick={() => setPage((p) => p + 1)}>
+                </GhostButton>
+                <div className="text-sm">
+                  Page {meta.page} / {meta.pages || 1}
+                </div>
+                <GhostButton
+                  disabled={page >= (meta.pages || 1)}
+                  onClick={() => setPage((p) => p + 1)}
+                >
                   Next
-                </button>
+                </GhostButton>
               </div>
             </div>
           </div>
 
+          {/* Detail */}
           <div className="p-4">
             {view ? (
               <article className="prose max-w-none">
-                <h2 className="text-xl font-semibold">{view.subject}</h2>
-                <p className="text-sm text-neutral-500">
-                  จาก: <b>{view.name}</b> &lt;{view.email}&gt; • {new Date(view.createdAt).toLocaleString()}
+                <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100">
+                  {view.subject}
+                </h2>
+                <p className="text-sm text-neutral-600 dark:text-neutral-300">
+                  จาก: <b>{view.name}</b> &lt;{view.email}&gt; •{" "}
+                  {new Date(view.createdAt).toLocaleString()}
                 </p>
-                {view.phone && <p className="text-sm">โทร: {view.phone}</p>}
-                <hr className="my-3" />
-                <pre className="whitespace-pre-wrap text-sm">{view.message}</pre>
+                {view.phone && (
+                  <p className="text-sm text-neutral-700 dark:text-neutral-200">
+                    โทร: {view.phone}
+                  </p>
+                )}
+                <hr className="my-3 border-neutral-200 dark:border-neutral-700" />
+                <pre className="whitespace-pre-wrap text-sm text-neutral-800 dark:text-neutral-100">
+                  {view.message}
+                </pre>
                 <div className="mt-4 flex gap-2">
-                  <StatefulButton className="h-9 px-3" onClick={() => onDelete(view.id)}>ลบข้อความนี้</StatefulButton>
-                  <button className="h-9 px-3 rounded-md border" onClick={() => setView(null)}>ปิด</button>
+                  <StatefulButton
+                    className="h-9 px-3"
+                    onClick={() => onDelete(view.id)}
+                  >
+                    ลบข้อความนี้
+                  </StatefulButton>
+                  <GhostButton onClick={() => setView(null)}>ปิด</GhostButton>
                 </div>
               </article>
             ) : (
-              <div className="text-neutral-500">เลือกข้อความทางซ้ายเพื่อดูรายละเอียด</div>
+              <div className="text-neutral-500">
+                เลือกข้อความทางซ้ายเพื่อดูรายละเอียด
+              </div>
             )}
           </div>
         </div>

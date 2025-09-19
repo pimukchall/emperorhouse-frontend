@@ -2,7 +2,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import RegisterDialog from "@/components/modal/RegisterDialog";
+import RegisterDialog from "@/app/register/components/RegisterDialog";
 
 export default function RegisterPage() {
   const router = useRouter();

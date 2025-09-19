@@ -16,15 +16,13 @@ export default function UsersTable({
   const columns = ["ID", "Email", "ชื่อ / Role", "Organization", "Primary / Others", "ลบ?", "Actions"];
 
   return (
-    <section className="rounded-xl border overflow-hidden">
+    <section className="rounded-xl border dark:border-neutral-700 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-neutral-50 sticky top-0 z-10">
+          <thead className="bg-neutral-100 dark:bg-neutral-800 sticky top-0 z-10">
             <tr>
               {columns.map((c, i) => (
-                <Th key={i} right={c === "Actions"}>
-                  {c}
-                </Th>
+                <Th key={i} right={c === "Actions"}>{c}</Th>
               ))}
             </tr>
           </thead>
@@ -37,20 +35,17 @@ export default function UsersTable({
                 const org = u.organization;
 
                 return (
-                  <tr key={u.id} className="border-t align-top hover:bg-neutral-50/60">
+                  <tr key={u.id} className="border-t dark:border-neutral-700 align-top hover:bg-neutral-50/60 dark:hover:bg-neutral-800/50">
                     <Td>{u.id}</Td>
                     <Td className="whitespace-nowrap">{u.email}</Td>
                     <Td>
-                      <div className="font-medium">
-                        {u.name || `${u.firstNameTh || ""} ${u.lastNameTh || ""}`}
-                      </div>
-                      <div className="mt-0.5 text-xs text-neutral-600">{u.role?.name || "-"}</div>
+                      <div className="font-medium">{u.name || `${u.firstNameTh || ""} ${u.lastNameTh || ""}`}</div>
+                      <div className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-300">{u.role?.name || "-"}</div>
                     </Td>
                     <Td className="whitespace-nowrap">
                       {org ? (
                         <>
-                          {org.code ? <b>{org.code}</b> : <b>ORG#{org.id}</b>} ·{" "}
-                          {org.nameTh || org.nameEn || "-"}
+                          {org.code ? <b>{org.code}</b> : <b>ORG#{org.id}</b>} · {org.nameTh || org.nameEn || "-"}
                         </>
                       ) : (
                         <span className="text-neutral-500">-</span>
@@ -67,7 +62,7 @@ export default function UsersTable({
                         <div className="text-neutral-500">-</div>
                       )}
                       {others.map((d) => (
-                        <div key={d.id} className="whitespace-nowrap text-[12px] text-neutral-700">
+                        <div key={d.id} className="whitespace-nowrap text-[12px] text-neutral-700 dark:text-neutral-300">
                           {d.department?.code} · {d.positionLevel}
                           {d.positionName ? ` (${d.positionName})` : ""}
                         </div>
@@ -79,22 +74,14 @@ export default function UsersTable({
                         <GhostButton onClick={() => onEdit(u)}>Edit</GhostButton>
                         <GhostButton onClick={() => onManageDepts(u)}>Manage Depts</GhostButton>
                         {!u.deletedAt ? (
-                          <GhostButton className="text-amber-700" onClick={() => onSoftDelete(u)}>
-                            Soft Delete
-                          </GhostButton>
+                          <GhostButton className="text-amber-700" onClick={() => onSoftDelete(u)}>Soft Delete</GhostButton>
                         ) : (
                           <>
-                            <GhostButton className="text-green-700" onClick={() => onRestore(u)}>
-                              Restore
-                            </GhostButton>
-                            <GhostButton className="text-rose-700" onClick={() => onHardDelete(u)}>
-                              Hard Delete
-                            </GhostButton>
+                            <GhostButton className="text-green-700" onClick={() => onRestore(u)}>Restore</GhostButton>
+                            <GhostButton className="text-rose-700" onClick={() => onHardDelete(u)}>Hard Delete</GhostButton>
                           </>
                         )}
-                        <GhostButton className="text-purple-700" onClick={() => onResetPassword(u)}>
-                          Reset Password
-                        </GhostButton>
+                        <GhostButton className="text-purple-700" onClick={() => onResetPassword(u)}>Reset Password</GhostButton>
                       </div>
                     </Td>
                   </tr>
@@ -102,9 +89,7 @@ export default function UsersTable({
               })
             ) : (
               <tr>
-                <Td colSpan={7} className="px-3 py-6 text-center text-neutral-500">
-                  ไม่พบข้อมูล
-                </Td>
+                <Td colSpan={7} className="px-3 py-6 text-center text-neutral-500">ไม่พบข้อมูล</Td>
               </tr>
             )}
           </tbody>
@@ -114,15 +99,9 @@ export default function UsersTable({
       <div className="flex items-center justify-between p-3">
         <div className="text-xs text-neutral-500">ทั้งหมด {meta.total} รายการ</div>
         <div className="flex gap-2">
-          <GhostButton disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-            Prev
-          </GhostButton>
-          <div className="text-sm">
-            Page {meta.page} / {meta.pages || 1}
-          </div>
-          <GhostButton disabled={page >= (meta.pages || 1)} onClick={() => setPage((p) => p + 1)}>
-            Next
-          </GhostButton>
+          <GhostButton disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</GhostButton>
+          <div className="text-sm">Page {meta.page} / {meta.pages || 1}</div>
+          <GhostButton disabled={page >= (meta.pages || 1)} onClick={() => setPage((p) => p + 1)}>Next</GhostButton>
         </div>
       </div>
     </section>
@@ -132,7 +111,7 @@ export default function UsersTable({
 function GhostButton({ children, className = "", ...rest }) {
   return (
     <button
-      className={`px-2 py-1 rounded-md border hover:bg-neutral-50 disabled:opacity-50 ${className}`}
+      className={`px-2 py-1 rounded-md border dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 ${className}`}
       {...rest}
     >
       {children}
@@ -142,18 +121,11 @@ function GhostButton({ children, className = "", ...rest }) {
 
 function Th({ children, right }) {
   return (
-    <th
-      className={`px-3 py-2 ${right ? "text-right" : "text-left"} text-[13px] font-semibold text-neutral-700`}
-    >
-      {children}
-    </th>
+    <th className={`px-3 py-2 ${right ? "text-right" : "text-left"} text-neutral-700 dark:text-neutral-200`}>{children}</th>
   );
 }
-
-function Td({ children, className = "", right, colSpan }) {
+function Td({ children, right, className = "", ...rest }) {
   return (
-    <td className={`px-3 py-2 ${right ? "text-right" : ""} ${className}`} colSpan={colSpan}>
-      {children}
-    </td>
+    <td className={`px-3 py-2 ${right ? "text-right" : ""} ${className}`} {...rest}>{children}</td>
   );
 }

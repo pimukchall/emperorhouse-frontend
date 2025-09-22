@@ -49,11 +49,22 @@ export default function AdminDepartmentsPage() {
   function openEdit(d) { setEditing({ id: d.id, code: d.code || "", nameTh: d.nameTh || "", nameEn: d.nameEn || "" }); setDialogOpen(true); }
 
   async function save() {
-    const payload = { code: editing.code || null, nameTh: editing.nameTh || null, nameEn: editing.nameEn || null };
-    if (editing.id === 0) await apiFetch(`/api/departments`, { method: "POST", body: payload });
-    else await apiFetch(`/api/departments/${editing.id}`, { method: "PUT", body: payload });
-    setDialogOpen(false); load();
+    const payload = {
+      id: editing.id || null, // สำคัญ: ต้องส่ง id มาด้วยเวลาแก้ไข
+      code: editing.code || null,
+      nameTh: editing.nameTh || null,
+      nameEn: editing.nameEn || null,
+    };
+
+    await apiFetch(`/api/departments`, {
+      method: "POST",
+      body: payload,
+    });
+
+    setDialogOpen(false);
+    load();
   }
+
   async function remove(id) { if (!confirm("ลบรายการนี้?")) return; await apiFetch(`/api/departments/${id}`, { method: "DELETE" }); load(); }
 
   return (

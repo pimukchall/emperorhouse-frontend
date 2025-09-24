@@ -1,3 +1,4 @@
+// src/components/NavLinks.jsx
 "use client";
 
 import Link from "next/link";
@@ -17,8 +18,29 @@ import {
 } from "lucide-react";
 import { DesktopNavItem } from "./NavItem";
 import { cn } from "@/lib/utils";
-// ⬇️ เปลี่ยน isRole → hasRole ให้ตรงกับ provider ใหม่
-import { useAuth, hasRole, inDepartment } from "@/providers/local-auth";
+import { useAuth, hasRole } from "@/providers/local-auth";
+
+/** ===== utils ในไฟล์นี้ ===== */
+const LEVEL_RANK = { STAF: 1, SVR: 2, ASST: 3, MANAGER: 4, MD: 5 };
+function inDepartment(user, code) {
+  const target = String(code || "").toUpperCase();
+  const primary =
+    user?.primaryUserDept?.department?.code ||
+    user?.primaryDeptCode ||
+    "";
+  if (String(primary).toUpperCase() === target) return true;
+  const list = Array.isArray(user?.departments) ? user.departments : [];
+  return list.some((d) => String(d?.code || "").toUpperCase() === target);
+}
+function isManagerOrAbove(user) {
+  const lvl =
+    user?.primaryUserDept?.positionLevel ||
+    user?.primaryLevel ||
+    user?.positionLevel ||
+    "";
+  const r = LEVEL_RANK[String(lvl).toUpperCase()] || 0;
+  return r >= LEVEL_RANK.ASST; // ปรับเป็น MANAGER ถ้าต้องเข้มขึ้น
+}
 
 /** สิทธิ์เข้า HR:
  * - admin → ผ่าน
@@ -32,11 +54,11 @@ function canAccessHR(user) {
 
 /** สิทธิ์เข้า Admin:
  * - admin → ผ่าน
- * - หรือ แผนก HR และ role เป็น manager
+ * - หรือ แผนก HR และ manager ขึ้นไป
  */
 function canAccessAdmin(user) {
   if (hasRole(user, "admin")) return true;
-  return inDepartment(user, "HR") && hasRole(user, "manager");
+  return inDepartment(user, "HR") && isManagerOrAbove(user);
 }
 
 export function NavLinks() {
@@ -112,15 +134,19 @@ function HrDropdown() {
         className={`absolute left-0 z-50 mt-2 min-w-[180px] rounded-xl border bg-white shadow-lg ring-1 ring-black/5 dark:bg-neutral-900 dark:border-white/10 dark:ring-white/10 transition-all duration-150
         ${open ? "opacity-100 translate-y-0" : "pointer-events-none -translate-y-1 opacity-0"}`}
       >
+        <DropdownItem href="/evals"        icon={ClipboardList} label="งานของฉัน" />
+        <DropdownItem href="/approvals"    icon={ClipboardList} label="Approvals" />
+        <DropdownItem href="/hr/reports"   icon={BarChart3}     label="รายงาน HR" />
+
+        <div className="my-1 border-t border-neutral-200 dark:border-white/10" />
+
         <DropdownItem href="/admin/hr/lineoa" icon={MessageSquare} label="LineOA" />
-        <DropdownItem href="/admin/hr/evaluations" icon={ClipboardList} label="Evaluations" />
-        <DropdownItem href="/admin/hr/evaluations/stats" icon={BarChart3} label="HR Stats (สถิติรวม)" />
       </div>
     </div>
   );
 }
 
-/* ===== Admin dropdown (แทน Dev) ===== */
+/* ===== Admin dropdown ===== */
 function AdminDropdown() {
   const [open, setOpen] = useState(false);
   const closeTimer = useRef(null);
@@ -168,10 +194,10 @@ function AdminDropdown() {
         className={`absolute left-0 z-50 mt-2 min-w-[200px] rounded-xl border bg-white shadow-lg ring-1 ring-black/5 dark:bg-neutral-900 dark:border-white/10 dark:ring-white/10 transition-all duration-150
         ${open ? "opacity-100 translate-y-0" : "pointer-events-none -translate-y-1 opacity-0"}`}
       >
-        <DropdownItem href="/admin/departments" icon={Building2} label="Departments" />
-        <DropdownItem href="/admin/roles"       icon={Shield}    label="Roles" />
-        <DropdownItem href="/admin/users"       icon={Users}     label="Users" />
-        <DropdownItem href="/admin/contacts"    icon={Mail}      label="Contacts" />
+        <DropdownItem href="/admin/departments"  icon={Building2} label="Departments" />
+        <DropdownItem href="/admin/roles"        icon={Shield}    label="Roles" />
+        <DropdownItem href="/admin/users"        icon={Users}     label="Users" />
+        <DropdownItem href="/admin/contacts"     icon={Mail}      label="Contacts" />
         <DropdownItem href="/admin/organizations" icon={ClipboardList} label="Organizations" />
       </div>
     </div>

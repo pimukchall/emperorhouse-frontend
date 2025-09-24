@@ -1,106 +1,101 @@
+// src/middleware.js
+// ปกป้องเส้นทาง /admin/** ด้วย JWT ผ่านคุกกี้ httpOnly (มี refresh อัตโนมัติ)
+// หมายเหตุ: middleware รันฝั่ง Edge — ใช้ fetch() พร้อมส่ง cookie จาก req
+
 import { NextResponse } from "next/server";
 
-/** ใช้ absolute URL ของ API จาก ENV โดยตรงใน middleware */
-const API_BASE = process.env.API_BASE_URL || "http://localhost:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
+const LEVEL_RANK = { STAF: 1, SVR: 2, ASST: 3, MANAGER: 4, MD: 5 };
 
-/** เทียบแบบไม่แคร์ตัวพิมพ์ */
-function ieq(a, b) { return String(a || "").toLowerCase() === String(b || "").toLowerCase(); }
+function ieq(a, b) {
+  return String(a || "").toLowerCase() === String(b || "").toLowerCase();
+}
 function hasAdmin(user) {
-  const rn = user?.role?.name || user?.roleName || "";
-  return ieq(rn, "admin");
+  return ieq(user?.role?.name || user?.roleName, "admin");
 }
 function inHR(user) {
+  // พิจารณาจาก primary department code (หรือจาก list departments)
   const code =
-    user?.department?.code ||
-    user?.deptCode ||
-    user?.departmentCode ||
     user?.primaryUserDept?.department?.code ||
     user?.primaryDeptCode ||
+    (Array.isArray(user?.departments) ? user.departments[0]?.code : "") ||
     "";
-  return ieq(code, "hr");
+  return ieq(code, "HR");
 }
-function isManager(user) {
-  const rn = user?.role?.name || user?.roleName || "";
-  return ieq(rn, "manager");
+function isManagerOrAbove(user) {
+  const lvl =
+    user?.primaryUserDept?.positionLevel ||
+    user?.primaryLevel ||
+    user?.positionLevel ||
+    "";
+  const r = LEVEL_RANK[String(lvl).toUpperCase()] || 0;
+  return r >= LEVEL_RANK.ASST; // หากต้องการเข้มกว่านี้ ใช้ LEVEL_RANK.MANAGER
+}
+
+async function fetchWithCookies(url, req, init = {}) {
+  const headers = new Headers(init.headers || {});
+  // forward cookies ทั้งหมดไป backend
+  const cookie = req.headers.get("cookie");
+  if (cookie) headers.set("cookie", cookie);
+  headers.set("accept", "application/json");
+
+  const res = await fetch(url, {
+    ...init,
+    headers,
+    credentials: "include",
+    cache: "no-store",
+  });
+
+  // พยายาม parse json; ถ้าไม่ใช่ json ก็คืน text ไป
+  let data = null;
+  const ct = res.headers.get("content-type") || "";
+  if (ct.includes("application/json")) {
+    data = await res.json().catch(() => null);
+  } else {
+    try { data = await res.text(); } catch { data = null; }
+  }
+
+  return { res, data };
 }
 
 export async function middleware(req) {
   const url = new URL(req.url);
+  const pathname = url.pathname || "/";
 
-  // ตรวจเฉพาะ /admin/**
-  if (!url.pathname.startsWith("/admin")) {
+  // ปกป้องเฉพาะ /admin/**
+  if (!pathname.startsWith("/admin")) {
     return NextResponse.next();
   }
 
-  // forward cookie ของผู้ใช้ไป API
-  const cookieHeader = (req.headers.get("cookie") || "").toString();
-
-  const callApi = async (path) => {
-    try {
-      return await fetch(`${API_BASE}${path}`, {
-        method: "POST",
-        headers: { cookie: cookieHeader },
-        // @ts-ignore
-        credentials: "include",
-        cache: "no-store",
-      });
-    } catch {
-      return null;
-    }
-  };
-
-  const getApi = async (path) => {
-    try {
-      return await fetch(`${API_BASE}${path}`, {
-        method: "GET",
-        headers: { cookie: cookieHeader },
-        // @ts-ignore
-        credentials: "include",
-        cache: "no-store",
-      });
-    } catch {
-      return null;
-    }
-  };
-
   // 1) ลอง /auth/me ก่อน
-  let meRes = await getApi("/auth/me");
+  let { res: meRes, data: meData } = await fetchWithCookies(`${API_BASE}/auth/me`, req);
 
-  // 2) ถ้า 401 → ลอง refresh แล้วเรียก me ใหม่
-  if (!meRes || meRes.status === 401) {
-    const refRes = await callApi("/auth/refresh");
-    if (refRes && refRes.ok) {
-      meRes = await getApi("/auth/me");
-    }
+  // 2) ถ้า 401 → ลอง refresh แล้วค่อย me อีกครั้ง
+  if (meRes.status === 401) {
+    await fetchWithCookies(`${API_BASE}/auth/refresh`, req, { method: "POST" });
+    ({ res: meRes, data: meData } = await fetchWithCookies(`${API_BASE}/auth/me`, req));
   }
 
-  // 3) ยังไม่ ok → เด้งไป /login
-  if (!meRes || !meRes.ok) {
-    const login = new URL("/login", req.url);
-    login.searchParams.set("callbackUrl", url.pathname + url.search);
-    return NextResponse.redirect(login);
+  // 3) ยังไม่ผ่าน → ส่งไป /login?callbackUrl=...
+  if (!meRes.ok || !meData?.isAuthenticated) {
+    const redirect = new URL("/login", req.url);
+    redirect.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(redirect);
   }
 
-  // 4) อ่าน user
-  const meJson = await meRes.json().catch(() => ({}));
-  const user = meJson?.user;
-  const authed = meJson?.isAuthenticated ?? !!user;
+  const user = meData.user;
 
-  if (!authed || !user) {
-    const login = new URL("/login", req.url);
-    login.searchParams.set("callbackUrl", url.pathname + url.search);
-    return NextResponse.redirect(login);
-  }
-
-  // 5) เช็คสิทธิ์: admin หรือ (hr + manager)
-  const allowed = hasAdmin(user) || (inHR(user) && isManager(user));
+  // 4) ตรวจสิทธิ์: admin หรือ (HR + manager ขึ้นไป)
+  const allowed = hasAdmin(user) || (inHR(user) && isManagerOrAbove(user));
   if (!allowed) {
     return NextResponse.redirect(new URL("/403", req.url));
   }
 
+  // 5) อนุญาตผ่าน
   return NextResponse.next();
 }
 
+// กำหนด matcher เฉพาะเส้นทางที่ต้องป้องกัน
 export const config = {
   matcher: ["/admin/:path*"],
 };

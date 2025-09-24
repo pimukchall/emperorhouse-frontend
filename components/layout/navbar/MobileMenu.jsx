@@ -1,3 +1,4 @@
+// src/components/MobileMenu.jsx
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
@@ -22,10 +23,32 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-// ⬇️ เปลี่ยน isRole → hasRole ให้ตรงกับ provider ใหม่
-import { useAuth, hasRole, inDepartment } from "@/providers/local-auth";
+// เปลี่ยนเป็น provider ที่เราใช้จริง
+import { useAuth, hasRole } from "@/providers/local-auth";
 
-/** กลุ่มรายการแบบพับได้บนมือถือ */
+// ======== local utils (ลดการอ้าง provider อื่น) ========
+const LEVEL_RANK = { STAF: 1, SVR: 2, ASST: 3, MANAGER: 4, MD: 5 };
+function inDepartment(user, code) {
+  const target = String(code || "").toUpperCase();
+  const primary =
+    user?.primaryUserDept?.department?.code ||
+    user?.primaryDeptCode ||
+    "";
+  if (String(primary).toUpperCase() === target) return true;
+  const list = Array.isArray(user?.departments) ? user.departments : [];
+  return list.some((d) => String(d?.code || "").toUpperCase() === target);
+}
+function isManagerOrAbove(user) {
+  const lvl =
+    user?.primaryUserDept?.positionLevel ||
+    user?.primaryLevel ||
+    user?.positionLevel ||
+    "";
+  const r = LEVEL_RANK[String(lvl).toUpperCase()] || 0;
+  return r >= LEVEL_RANK.ASST; // ปรับเป็น MANAGER ถ้าต้องเข้มขึ้น
+}
+
+// กลุ่มรายการแบบพับได้บนมือถือ
 function Group({ id, label, Icon, open, onToggle, items, onItemClick }) {
   return (
     <>
@@ -73,19 +96,14 @@ function Group({ id, label, Icon, open, onToggle, items, onItemClick }) {
   );
 }
 
-/** สิทธิ์เข้าโซน Admin:
- * - admin → ผ่าน
- * - หรือ แผนก HR และ role เป็น manager → ผ่าน
- */
+// สิทธิ์เข้าโซน Admin: admin หรือ (HR + manager ขึ้นไป)
 function canAccessAdmin(user) {
   if (hasRole(user, "admin")) return true;
-  if (inDepartment(user, "HR") && hasRole(user, "manager")) return true;
+  if (inDepartment(user, "HR") && isManagerOrAbove(user)) return true;
   return false;
 }
 
-/** (ตัวอย่าง) สิทธิ์เข้า HR group:
- * - คนในแผนก HR
- */
+// สิทธิ์เข้า HR group: ผู้ที่อยู่ HR ทั้งหมด (admin ผ่านเสมอ)
 function canAccessHR(user) {
   if (hasRole(user, "admin")) return true;
   if (!inDepartment(user, "HR")) return false;
@@ -158,7 +176,6 @@ export function MobileMenu({ open, onClose }) {
             />
           )}
 
-          {/* กลุ่ม Admin (แทน Dev ที่ลบออก) */}
           {showAdmin && (
             <Group
               id="admin-mobile"
@@ -180,7 +197,7 @@ export function MobileMenu({ open, onClose }) {
           <div className="my-2 h-px bg-black/10 dark:bg-white/10" />
 
           <div className="mt-2 space-y-3">
-            <div className="flex flex-col gap-3 rounded-xl bg-black/5 px-3 py-2 dark:bg.white/5 dark:bg-white/5">
+            <div className="flex flex-col gap-3 rounded-xl bg-black/5 px-3 py-2 dark:bg-white/5">
               {user && (
                 <div className="flex items-center gap-3">
                   <AvatarButton

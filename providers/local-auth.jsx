@@ -1,134 +1,81 @@
+// React Auth context: จัดการ login / refresh / authedFetch ฝั่ง client
 "use client";
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { apiUrl, apiFetch } from "../lib/api";
 
-// ----- helpers -----
-export function hasRole(userOrRoleName, roleNameMaybe) {
-  const ctx = typeof userOrRoleName === "string" ? useAuth() : null;
-  const user = typeof userOrRoleName === "string" ? ctx.user : userOrRoleName;
-  const role = (user?.role?.name || user?.roleName || "").toLowerCase();
-  const target = (
-    typeof userOrRoleName === "string" ? userOrRoleName : roleNameMaybe || ""
-  ).toLowerCase();
-  return role === target;
-}
-export function inDepartment(user, deptCode) {
-  const code = (
-    user?.primaryUserDept?.department?.code ||
-    user?.deptCode ||
-    ""
-  ).toUpperCase();
-  return code === String(deptCode || "").toUpperCase();
-}
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { apiUrl, apiFetch } from "@/lib/api";
 
 const AuthCtx = createContext(null);
-export function useAuth() {
-  const v = useContext(AuthCtx);
-  if (!v) throw new Error("useAuth must be used inside <AuthProvider/>");
-  return v;
-}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isReady, setReady] = useState(false);
   const accessTokenRef = useRef(null);
 
-  function normalizeMe(payload) {
-    if (payload && typeof payload === "object" && "data" in payload) {
-      return { ok: !!payload.ok, isAuthenticated: true, user: payload.data };
+  const refresh = useCallback(async () => {
+    try {
+      const data = await apiFetch("/auth/refresh", { method: "POST" }, { absoluteUrl: false });
+      accessTokenRef.current = data?.accessToken || null;
+      setUser(data?.user || null);
+      return true;
+    } catch {
+      accessTokenRef.current = null;
+      setUser(null);
+      return false;
     }
-    if (payload && typeof payload === "object" && "isAuthenticated" in payload) {
-      return payload;
-    }
-    return { ok: false, isAuthenticated: false, user: null };
-    }
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const raw = await apiFetch("/auth/me");
-        const j = normalizeMe(raw);
-        if (!cancelled) {
-          setIsAuthenticated(!!j.isAuthenticated);
-          setUser(j.user || null);
-        }
-      } catch {
-        if (!cancelled) {
-          setIsAuthenticated(false);
-          setUser(null);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
   }, []);
 
-  async function refresh() {
+  const fetchMe = useCallback(async () => {
     try {
-      const j = await apiFetch("/auth/refresh", { method: "POST" });
-      if (j?.ok && j.accessToken) {
-        accessTokenRef.current = j.accessToken;
-        if (j.user) {
-          setUser(j.user);
-          setIsAuthenticated(true);
-        }
-        return true;
-      }
-    } catch {}
-    accessTokenRef.current = null;
-    return false;
-  }
-
-  async function signIn(email, password, { remember = true } = {}) {
-    try {
-      const j = await apiFetch("/auth/login", {
-        method: "POST",
-        body: { email, password, remember },
-      });
-      if (!j?.ok) throw new Error(j?.error || "Login failed");
-      accessTokenRef.current = j.accessToken || null;
-
-      if (j.user) {
-        setUser(j.user);
-        setIsAuthenticated(true);
-        return true;
-      }
-      const meRaw = await apiFetch("/auth/me");
-      const me = normalizeMe(meRaw);
-      setUser(me.user || null);
-      setIsAuthenticated(!!me.isAuthenticated);
+      const data = await apiFetch("/auth/me", {}, { absoluteUrl: false });
+      setUser(data?.user || null);
       return true;
-    } catch (err) {
-      setUser(null);
-      setIsAuthenticated(false);
-      throw err;
+    } catch {
+      return false;
+    } finally {
+      setReady(true);
     }
-  }
+  }, []);
 
-  async function signOut() {
+  useEffect(() => {
+    // เริ่มด้วยการลอง /auth/me ก่อน ถ้า 401 ตัว apiFetch จะไม่ refresh อัตโนมัติ
+    // เราค่อยลอง refresh เองเพื่อยืดอายุ session
+    (async () => {
+      const ok = await fetchMe();
+      if (!ok) await refresh();
+      setReady(true);
+    })();
+  }, [fetchMe, refresh]);
+
+  const signIn = useCallback(async (email, password) => {
+    const data = await apiFetch(
+      "/auth/login",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      },
+      {
+        absoluteUrl: false,
+      }
+    );
+    accessTokenRef.current = data?.accessToken || null;
+    setUser(data?.user || null);
+    return true;
+  }, []);
+
+  const signOut = useCallback(async () => {
     try {
-      await apiFetch("/auth/logout", { method: "POST" });
+      await apiFetch("/auth/logout", { method: "POST" }, { absoluteUrl: false });
     } catch {}
     accessTokenRef.current = null;
-    setIsAuthenticated(false);
     setUser(null);
-  }
+    return true;
+  }, []);
 
-  /** authedFetch: แนบ Bearer + retry เมื่อ 401 ด้วย /auth/refresh */
   async function authedFetch(pathOrUrl, init = {}) {
     const isAbsolute = /^https?:\/\//i.test(pathOrUrl);
     return apiFetch(
-      isAbsolute ? pathOrUrl : pathOrUrl,
+      pathOrUrl,
       init,
       {
         absoluteUrl: isAbsolute,
@@ -138,22 +85,35 @@ export function AuthProvider({ children }) {
     );
   }
 
-  const value = useMemo(
-    () => ({
-      user,
-      isAuthenticated,
-      loading,
-      signIn,
-      signOut,
-      refresh,
-      authedFetch,
-      apiUrl,
-      hasRole: (role) => hasRole(user, role),
-      inDepartment: (code) => inDepartment(user, code),
-      getAccessToken: () => accessTokenRef.current,
-    }),
-    [user, isAuthenticated, loading]
-  );
+  const value = {
+    isReady,
+    user,
+    setUser,
+    accessToken: accessTokenRef.current,
+    signIn,
+    signOut,
+    refresh,
+    authedFetch,
+  };
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthCtx);
+  if (!ctx) throw new Error("useAuth must be used within <AuthProvider/>");
+  return ctx;
+}
+
+export function hasRole(userOrRoleName, roleNameMaybe) {
+  // ใช้ได้สองรูปแบบ:
+  // 1) hasRole("admin")  → จะอ่าน user จาก context
+  // 2) hasRole(user, "admin" | ["admin", "user"])
+  const ctx = typeof userOrRoleName === "string" ? useAuth() : null;
+  const user = typeof userOrRoleName === "string" ? ctx.user : userOrRoleName;
+  const role = (user?.role?.name || user?.roleName || "").toLowerCase();
+  const targets = Array.isArray(roleNameMaybe)
+    ? roleNameMaybe
+    : [typeof userOrRoleName === "string" ? userOrRoleName : roleNameMaybe].filter(Boolean);
+  return targets.map((t) => String(t).toLowerCase()).includes(role);
 }

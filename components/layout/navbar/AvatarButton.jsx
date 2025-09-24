@@ -1,3 +1,4 @@
+// src/components/AvatarButton.jsx
 "use client";
 
 import Link from "next/link";
@@ -19,7 +20,7 @@ export default function AvatarButton({
   href = "/profile",
   name,
   email,
-  photo,          // อาจเป็น URL ภายนอก
+  photo,           // อาจเป็น URL ภายนอก
   fetchUrl = null, // เช่น `/profile/files/user/avatar/:id`
   onClick,
   className,
@@ -40,7 +41,6 @@ export default function AvatarButton({
       if (version) u.searchParams.set("ts", String(version));
       return u.toString();
     } catch {
-      // photo เป็น path สั้น ๆ
       const hasQ = photo.includes("?");
       return version ? `${photo}${hasQ ? "&" : "?"}ts=${encodeURIComponent(String(version))}` : photo;
     }
@@ -56,7 +56,6 @@ export default function AvatarButton({
       if (photoWithTs || !fetchUrl) return;
 
       try {
-        // เติม ts เพื่อกันแคช
         const hasQ = fetchUrl.includes("?");
         const url = apiUrl(`${fetchUrl}${version ? `${hasQ ? "&" : "?"}ts=${encodeURIComponent(String(version))}` : ""}`);
 
@@ -65,24 +64,15 @@ export default function AvatarButton({
           cache: "no-store",
           credentials: "include",
         });
-        if (!r.ok) {
-          // 401/404/500 ฯลฯ
-          setImgError(true);
-          return;
-        }
+        if (!r.ok) { setImgError(true); return; }
 
         const ct = r.headers.get("content-type") || "";
-        if (!ct.toLowerCase().startsWith("image/")) {
-          // บางที backend ส่ง JSON error มา
-          setImgError(true);
-          return;
-        }
+        if (!ct.toLowerCase().startsWith("image/")) { setImgError(true); return; }
 
         const b = await r.blob();
         if (aborted) return;
         const blobUrl = URL.createObjectURL(b);
 
-        // เก็บตัวเก่าไว้คิว รอ revoke หลังจากรูปใหม่โหลดสำเร็จ (onLoad)
         if (currentBlobUrl.current) urlsToRevoke.current.push(currentBlobUrl.current);
         currentBlobUrl.current = blobUrl;
         setAutoPhoto(blobUrl);
@@ -113,7 +103,6 @@ export default function AvatarButton({
   const showInitialsFallback = !resolved && fallback === "initials";
 
   const handleLoaded = useCallback(() => {
-    // เมื่อรูปใหม่โหลดสำเร็จ ค่อย revoke ของเก่าที่ค้าง
     while (urlsToRevoke.current.length) {
       const u = urlsToRevoke.current.pop();
       try { URL.revokeObjectURL(u); } catch {}

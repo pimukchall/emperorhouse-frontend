@@ -1,3 +1,4 @@
+// src/components/Navbar.jsx
 "use client";
 
 import { useState } from "react";
@@ -13,7 +14,7 @@ import { MobileMenu } from "./MobileMenu";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/local-auth";
 
-// 🔹 เพิ่ม: โมดัลยืนยันมาตรฐาน
+// โมดัลยืนยันมาตรฐาน
 import { useConfirm } from "@/components/modal/useConfirm";
 
 export default function Navbar() {
@@ -21,7 +22,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, signOut } = useAuth();
-  const { confirm, dialog } = useConfirm(); // 🔹 ใช้ hook
+  const { confirm, dialog } = useConfirm();
 
   async function handleSignOut() {
     const ok = await confirm({
@@ -57,9 +58,7 @@ export default function Navbar() {
               <AvatarButton
                 name={user?.name}
                 email={user?.email}
-                fetchUrl={
-                  user?.id ? `/profile/files/user/avatar/${user.id}` : undefined
-                }
+                fetchUrl={user?.id ? `/profile/files/user/avatar/${user.id}` : undefined}
               />
             )}
             <ThemeToggle />
@@ -77,9 +76,7 @@ export default function Navbar() {
               <Button
                 className="h-9 rounded-full"
                 onClick={() =>
-                  router.push(
-                    `/login?callbackUrl=${encodeURIComponent(pathname || "/")}`
-                  )
+                  router.push(`/login?callbackUrl=${encodeURIComponent(pathname || "/")}`)
                 }
               >
                 Get Started
@@ -102,7 +99,7 @@ export default function Navbar() {
       {/* Mobile Menu */}
       <MobileMenu open={open} onClose={() => setOpen(false)} />
 
-      {/* 🔹 โมดัลยืนยัน (เรนเดอร์ไว้ท้ายคอมโพเนนต์) */}
+      {/* โมดัลยืนยัน */}
       {dialog}
     </nav>
   );

@@ -20,7 +20,7 @@ export default function ForbiddenPage() {
     } catch {
       // ignore
     } finally {
-      router.push(`/login?callbackUrl=${encodeURIComponent(pathname || "/")}`);
+      router.push(`/auth/login?callbackUrl=${encodeURIComponent(pathname || "/")}`);
     }
   }
 
@@ -50,7 +50,7 @@ export default function ForbiddenPage() {
             className="rounded-full px-6 py-2"
             onClick={handleSignIn}
           >
-            {user ? "Sign Out" : "Sign In"}
+            {user ? "ออกจากระบบ" : "เข้าสู่ระบบ"}
           </Button>
         </div>
 

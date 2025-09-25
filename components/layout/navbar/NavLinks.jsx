@@ -115,9 +115,10 @@ function HrDropdown() {
         className={`absolute left-0 z-50 mt-2 min-w-[180px] rounded-xl border bg-white shadow-lg ring-1 ring-black/5 dark:bg-neutral-900 dark:border-white/10 dark:ring-white/10 transition-all duration-150
         ${open ? "opacity-100 translate-y-0" : "pointer-events-none -translate-y-1 opacity-0"}`}
       >
-        <DropdownItem href="/evals"        icon={ClipboardList} label="งานของฉัน" />
-        <DropdownItem href="/approvals"    icon={ClipboardList} label="Approvals" />
-        <DropdownItem href="/hr/reports"   icon={BarChart3}     label="รายงาน HR" />
+        <DropdownItem href="/evals" icon={ClipboardList} label="งานของฉัน" />
+        <DropdownItem href="/approvals" icon={ClipboardList} label="Approvals" />
+        <DropdownItem href="/hr/cycles" icon={ClipboardList} label="กำหนดรอบประเมิน" />
+        <DropdownItem href="/hr/reports/evaluations" icon={BarChart3} label="ดูรายงานประเมิน" />
 
         <div className="my-1 border-t border-neutral-200 dark:border-white/10" />
 

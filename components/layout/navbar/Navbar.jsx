@@ -12,10 +12,8 @@ import { NavLinks } from "./NavLinks";
 import AvatarButton from "./AvatarButton";
 import { MobileMenu } from "./MobileMenu";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/providers/local-auth";
-
-// โมดัลยืนยันมาตรฐาน
-import { useConfirm } from "@/components/modal/useConfirm";
+import { useAuth } from "@/components/local-auth";
+import { useConfirm } from "@/hooks/useConfirm";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -26,15 +24,15 @@ export default function Navbar() {
 
   async function handleSignOut() {
     const ok = await confirm({
-      title: "Sign out",
+      title: "ออกจากระบบ",
       description: "คุณต้องการออกจากระบบใช่ไหม?",
-      confirmText: "Sign Out",
+      confirmText: "ออกจากระบบ",
       cancelText: "ยกเลิก",
       onConfirm: async () => {
         await signOut();
       },
     });
-    if (ok) router.push("/login");
+    if (ok) router.push("/auth/login");
   }
 
   return (
@@ -67,19 +65,19 @@ export default function Navbar() {
             ) : user ? (
               <StatefulButton
                 className="h-9 rounded-full"
-                loadingText="Signing out..."
+                loadingText="กำลังออกจากระบบ..."
                 onClick={handleSignOut}
               >
-                Sign Out
+                ออกจากระบบ
               </StatefulButton>
             ) : (
               <Button
                 className="h-9 rounded-full"
                 onClick={() =>
-                  router.push(`/login?callbackUrl=${encodeURIComponent(pathname || "/")}`)
+                  router.push(`/auth/login?callbackUrl=${encodeURIComponent(pathname)}`)
                 }
               >
-                Get Started
+                เข้าสู่ระบบ
               </Button>
             )}
           </div>

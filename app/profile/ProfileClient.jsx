@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/providers/local-auth";
+import { useAuth } from "@/components/local-auth";
 import { apiFetch, apiUrl } from "@/lib/api";
 import StatefulButton from "@/components/ui/stateful-button";
 import { BackgroundGradient } from "@/components/ui/background-gradient";
 import NoticeDialog from "@/components/modal/NoticeDialog";
 import ChangePasswordDialog from "@/components/modal/ChangePasswordDialog";
-import SignaturePad from "@/components/signature/SignaturePad";
+import SignaturePad from "@/app/profile/_components/SignaturePad";
 
 const EMPLOYEE_TYPES = { DAILY: "DAILY (รายวัน)", MONTHLY: "MONTHLY (รายเดือน)" };
 const CONTRACT_TYPES = { PERMANENT: "PERMANENT (ประจำ)", TEMPORARY: "TEMPORARY (ชั่วคราว)", PROBATION: "PROBATION (ทดลองงาน)" };

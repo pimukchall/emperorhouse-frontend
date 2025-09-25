@@ -18,47 +18,28 @@ import {
 } from "lucide-react";
 import { DesktopNavItem } from "./NavItem";
 import { cn } from "@/lib/utils";
-import { useAuth, hasRole } from "@/providers/local-auth";
+import { useAuth } from "@/components/local-auth";
 
-/** ===== utils ในไฟล์นี้ ===== */
-const LEVEL_RANK = { STAF: 1, SVR: 2, ASST: 3, MANAGER: 4, MD: 5 };
-function inDepartment(user, code) {
-  const target = String(code || "").toUpperCase();
-  const primary =
-    user?.primaryUserDept?.department?.code ||
-    user?.primaryDeptCode ||
-    "";
-  if (String(primary).toUpperCase() === target) return true;
-  const list = Array.isArray(user?.departments) ? user.departments : [];
-  return list.some((d) => String(d?.code || "").toUpperCase() === target);
-}
-function isManagerOrAbove(user) {
-  const lvl =
-    user?.primaryUserDept?.positionLevel ||
-    user?.primaryLevel ||
-    user?.positionLevel ||
-    "";
-  const r = LEVEL_RANK[String(lvl).toUpperCase()] || 0;
-  return r >= LEVEL_RANK.ASST; // ปรับเป็น MANAGER ถ้าต้องเข้มขึ้น
-}
+// ใช้กฎ/ตัวช่วยเดียวกับ middleware
+import { findRule, isAdmin, userDeptCodes, userRank, LEVEL_RANK } from "@/access/rules";
 
-/** สิทธิ์เข้า HR:
- * - admin → ผ่าน
- * - หรือ แผนก HR
- */
-function canAccessHR(user) {
-  if (hasRole(user, "admin")) return true;
-  if (!inDepartment(user, "HR")) return false;
+// canVisit (UI) — คิดจากกฎกลางแบบเดียวกับ middleware
+function canVisit(path, user) {
+  if (!user) return false;
+  if (isAdmin(user)) return true;
+  const rule = findRule(path);
+  if (!rule) return true; // ไม่มีข้อกำหนด = ผ่าน
+  const { require = {} } = rule;
+  const codes = userDeptCodes(user);
+  const rank  = userRank(user);
+
+  if (require.deptAny?.length && !require.deptAny.some(c => codes.has(String(c).toUpperCase()))) return false;
+  if (require.deptAll?.length && !require.deptAll.every(c => codes.has(String(c).toUpperCase()))) return false;
+  if (require.minRank) {
+    const need = LEVEL_RANK[String(require.minRank).toUpperCase()] || 0;
+    if (rank < need) return false;
+  }
   return true;
-}
-
-/** สิทธิ์เข้า Admin:
- * - admin → ผ่าน
- * - หรือ แผนก HR และ manager ขึ้นไป
- */
-function canAccessAdmin(user) {
-  if (hasRole(user, "admin")) return true;
-  return inDepartment(user, "HR") && isManagerOrAbove(user);
 }
 
 export function NavLinks() {
@@ -71,8 +52,8 @@ export function NavLinks() {
     { label: "Contact", href: "/contact", icon: Mail },
   ];
 
-  const showHR = canAccessHR(user);
-  const showAdmin = canAccessAdmin(user);
+  const showHR = !!user && canVisit("/hr", user);
+  const showAdmin = !!user && canVisit("/admin", user);
 
   return (
     <div className="ml-10 flex items-center gap-6">
@@ -140,7 +121,8 @@ function HrDropdown() {
 
         <div className="my-1 border-t border-neutral-200 dark:border-white/10" />
 
-        <DropdownItem href="/admin/hr/lineoa" icon={MessageSquare} label="LineOA" />
+        {/* เปลี่ยน path ให้ HR ใช้โซน /hr/ ไม่ใช่ /admin/hr/ */}
+        <DropdownItem href="/hr/lineoa" icon={MessageSquare} label="LineOA" />
       </div>
     </div>
   );
@@ -180,7 +162,7 @@ function AdminDropdown() {
         aria-controls={menuId}
         className={cn(
           "relative flex items-center gap-1 transition group",
-          "text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white"
+          "text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text:white"
         )}
       >
         <Shield className="h-4 w-4" />
@@ -191,7 +173,7 @@ function AdminDropdown() {
       <div
         id={menuId}
         role="menu"
-        className={`absolute left-0 z-50 mt-2 min-w-[200px] rounded-xl border bg-white shadow-lg ring-1 ring-black/5 dark:bg-neutral-900 dark:border-white/10 dark:ring-white/10 transition-all duration-150
+        className={`absolute left-0 z-50 mt-2 min-w-[200px] rounded-xl border bg-white shadow-lg ring-1 ring-black/5 dark:bg-neutral-900 dark:border-white/10 dark:ring:white/10 transition-all duration-150
         ${open ? "opacity-100 translate-y-0" : "pointer-events-none -translate-y-1 opacity-0"}`}
       >
         <DropdownItem href="/admin/departments"  icon={Building2} label="Departments" />
@@ -209,7 +191,7 @@ function DropdownItem({ href, icon: Icon, label, onClick }) {
     <Link
       href={href}
       role="menuitem"
-      className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-800 hover:bg-neutral-50 focus:bg-neutral-50 focus:outline-none dark:text-neutral-200 dark:hover:bg-white/5 dark:focus:bg-white/5"
+      className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-800 hover:bg-neutral-50 focus:bg-neutral-50 focus:outline-none dark:text-neutral-200 dark:hover:bg:white/5 dark:focus:bg:white/5"
       onClick={onClick}
     >
       {Icon ? <Icon className="h-4 w-4" /> : null}

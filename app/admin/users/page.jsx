@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { useAuth, hasRole } from "@/providers/local-auth";
+import { useAuth, hasRole } from "@/components/local-auth";
 
 import FiltersBar from "./components/FiltersBar";
 import UserForm from "./components/UserForm";

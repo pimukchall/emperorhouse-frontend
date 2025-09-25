@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import ConfirmDialog from "./ConfirmDialog";
+import ConfirmDialog from "../components/modal/ConfirmDialog";
 
 export function useConfirm() {
   const [state, setState] = React.useState({

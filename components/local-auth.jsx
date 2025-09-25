@@ -1,4 +1,3 @@
-// React Auth context: จัดการ login / refresh / authedFetch ฝั่ง client
 "use client";
 
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";

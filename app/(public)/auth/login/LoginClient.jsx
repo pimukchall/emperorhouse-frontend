@@ -2,13 +2,11 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "@/providers/local-auth";
+import { useAuth } from "@/components/local-auth";
 import StatefulButton from "@/components/ui/stateful-button";
 import { BackgroundLines } from "@/components/ui/background-lines";
 import { BackgroundGradient } from "@/components/ui/background-gradient";
 import { IconLock } from "@tabler/icons-react";
-
-// ✅ โมดัลมาตรฐาน
 import NoticeDialog from "@/components/modal/NoticeDialog";
 import ForgotPasswordDialog from "@/components/modal/ForgotPasswordDialog";
 
@@ -43,10 +41,9 @@ export default function LoginClient() {
 
     setBusy(true);
     try {
-      // ⬇️ แก้ให้ตรงตาม provider ใหม่: signIn(email, password, { remember })
+     
       await signIn(email, password, { remember });
 
-      // ✅ แสดง Success modal สั้น ๆ ก่อนเปลี่ยนหน้า
       setNotice({ open: true, type: "success", message: "เข้าสู่ระบบสำเร็จ" });
       setTimeout(() => router.replace(callbackUrl), 700);
     } catch (err) {
@@ -148,7 +145,7 @@ export default function LoginClient() {
 
           <div className="text-center text-sm text-neutral-600 dark:text-neutral-400">
             ยังไม่มีบัญชี?{" "}
-            <a href="/register" className="underline">
+            <a href="/auth/register" className="underline">
               สมัครสมาชิก
             </a>
           </div>

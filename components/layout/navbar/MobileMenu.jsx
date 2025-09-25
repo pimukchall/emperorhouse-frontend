@@ -24,28 +24,28 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 // เปลี่ยนเป็น provider ที่เราใช้จริง
-import { useAuth, hasRole } from "@/providers/local-auth";
+import { useAuth } from "@/components/local-auth";
 
-// ======== local utils (ลดการอ้าง provider อื่น) ========
-const LEVEL_RANK = { STAF: 1, SVR: 2, ASST: 3, MANAGER: 4, MD: 5 };
-function inDepartment(user, code) {
-  const target = String(code || "").toUpperCase();
-  const primary =
-    user?.primaryUserDept?.department?.code ||
-    user?.primaryDeptCode ||
-    "";
-  if (String(primary).toUpperCase() === target) return true;
-  const list = Array.isArray(user?.departments) ? user.departments : [];
-  return list.some((d) => String(d?.code || "").toUpperCase() === target);
-}
-function isManagerOrAbove(user) {
-  const lvl =
-    user?.primaryUserDept?.positionLevel ||
-    user?.primaryLevel ||
-    user?.positionLevel ||
-    "";
-  const r = LEVEL_RANK[String(lvl).toUpperCase()] || 0;
-  return r >= LEVEL_RANK.ASST; // ปรับเป็น MANAGER ถ้าต้องเข้มขึ้น
+// ใช้กฎ/ตัวช่วยเดียวกับ middleware
+import { findRule, isAdmin, userDeptCodes, userRank, LEVEL_RANK } from "@/access/rules";
+
+// canVisit (UI) — คิดจากกฎกลางแบบเดียวกับ middleware
+function canVisit(path, user) {
+  if (!user) return false;
+  if (isAdmin(user)) return true;
+  const rule = findRule(path);
+  if (!rule) return true; // ไม่มีข้อกำหนด = ผ่าน
+  const { require = {} } = rule;
+  const codes = userDeptCodes(user);
+  const rank  = userRank(user);
+
+  if (require.deptAny?.length && !require.deptAny.some(c => codes.has(String(c).toUpperCase()))) return false;
+  if (require.deptAll?.length && !require.deptAll.every(c => codes.has(String(c).toUpperCase()))) return false;
+  if (require.minRank) {
+    const need = LEVEL_RANK[String(require.minRank).toUpperCase()] || 0;
+    if (rank < need) return false;
+  }
+  return true;
 }
 
 // กลุ่มรายการแบบพับได้บนมือถือ
@@ -57,7 +57,7 @@ function Group({ id, label, Icon, open, onToggle, items, onItemClick }) {
         aria-expanded={open}
         aria-controls={`${id}-group`}
         onClick={onToggle}
-        className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left text-gray-700 hover:bg-black/5 dark:text-gray-300 dark:hover:bg-white/5"
+        className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left text-gray-700 hover:bg-black/5 dark:text-gray-300 dark:hover:bg:white/5"
       >
         <span className="flex items-center gap-3">
           <Icon className="h-5 w-5" />
@@ -96,20 +96,6 @@ function Group({ id, label, Icon, open, onToggle, items, onItemClick }) {
   );
 }
 
-// สิทธิ์เข้าโซน Admin: admin หรือ (HR + manager ขึ้นไป)
-function canAccessAdmin(user) {
-  if (hasRole(user, "admin")) return true;
-  if (inDepartment(user, "HR") && isManagerOrAbove(user)) return true;
-  return false;
-}
-
-// สิทธิ์เข้า HR group: ผู้ที่อยู่ HR ทั้งหมด (admin ผ่านเสมอ)
-function canAccessHR(user) {
-  if (hasRole(user, "admin")) return true;
-  if (!inDepartment(user, "HR")) return false;
-  return true;
-}
-
 export function MobileMenu({ open, onClose }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -143,8 +129,8 @@ export function MobileMenu({ open, onClose }) {
     }
   };
 
-  const showHR = canAccessHR(user);
-  const showAdmin = canAccessAdmin(user);
+  const showHR = !!user && canVisit("/hr", user);
+  const showAdmin = !!user && canVisit("/admin", user);
 
   return (
     <AnimatePresence>
@@ -169,9 +155,9 @@ export function MobileMenu({ open, onClose }) {
               onToggle={() => toggleGroup("hr")}
               onItemClick={onClose}
               items={[
-                { label: "LineOA", href: "/admin/hr/lineoa", icon: MessageSquare },
-                { label: "Evaluations", href: "/admin/hr/evaluations", icon: ClipboardList },
-                { label: "HR Stats (สถิติรวม)", href: "/admin/hr/evaluations/stats", icon: BarChart3 },
+                { label: "LineOA", href: "/hr/lineoa", icon: MessageSquare },
+                { label: "Evaluations", href: "/hr/evaluations", icon: ClipboardList },
+                { label: "HR Stats (สถิติรวม)", href: "/hr/evaluations/stats", icon: BarChart3 },
               ]}
             />
           )}
@@ -194,7 +180,7 @@ export function MobileMenu({ open, onClose }) {
             />
           )}
 
-          <div className="my-2 h-px bg-black/10 dark:bg-white/10" />
+          <div className="my-2 h-px bg-black/10 dark:bg:white/10" />
 
           <div className="mt-2 space-y-3">
             <div className="flex flex-col gap-3 rounded-xl bg-black/5 px-3 py-2 dark:bg-white/5">
@@ -234,7 +220,8 @@ export function MobileMenu({ open, onClose }) {
                   onClick={() =>
                     signOut().then(() => {
                       onClose();
-                      router.push("/login");
+                      // ใช้เส้นทาง auth ใหม่
+                      router.push("/auth/login");
                     })
                   }
                 >
@@ -245,7 +232,8 @@ export function MobileMenu({ open, onClose }) {
                   className="h-9 w-full rounded-full"
                   onClick={() => {
                     onClose();
-                    router.push(`/login?callbackUrl=${encodeURIComponent(pathname || "/")}`);
+                    // ใช้เส้นทาง auth ใหม่
+                    router.push(`/auth/login?callbackUrl=${encodeURIComponent(pathname || "/")}`);
                   }}
                 >
                   Get Started

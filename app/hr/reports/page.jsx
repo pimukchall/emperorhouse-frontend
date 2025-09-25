@@ -37,7 +37,6 @@ export default function HRReportsPage() {
   return (
     <div className="p-6 space-y-4">
       <h1 className="text-xl font-semibold">HR Summary</h1>
-
       <div className="flex gap-2">
         <select className="border rounded px-2 py-1" value={cycleId} onChange={e=>setCycleId(e.target.value)}>
           <option value="">-- เลือกรอบ --</option>

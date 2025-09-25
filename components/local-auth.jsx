@@ -1,4 +1,3 @@
-// src/components/local-auth.jsx
 "use client";
 
 import React, {
@@ -9,15 +8,8 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { apiFetch } from "@/lib/api";
-// ⬇️ ใช้กฎเดียวกับ middleware
-import {
-  findRule,
-  isAdmin,
-  userDeptCodes,
-  userRank,
-  LEVEL_RANK,
-} from "@/access/rules";
+import { apiFetch, configureApiAuth } from "@/lib/api";
+import { findRule, isAdmin, userDeptCodes, userRank, LEVEL_RANK } from "@/access/rules";
 
 const AuthCtx = createContext(null);
 
@@ -28,11 +20,7 @@ export function AuthProvider({ children }) {
 
   const refresh = useCallback(async () => {
     try {
-      const data = await apiFetch(
-        "/auth/refresh",
-        { method: "POST" },
-        { absoluteUrl: false }
-      );
+      const data = await apiFetch("/auth/refresh", { method: "POST" });
       accessTokenRef.current = data?.accessToken || null;
       setUser(data?.user || null);
       return true;
@@ -45,13 +33,21 @@ export function AuthProvider({ children }) {
 
   const fetchMe = useCallback(async () => {
     try {
-      const data = await apiFetch("/auth/me", {}, { absoluteUrl: false });
+      const data = await apiFetch("/auth/me");
       setUser(data?.user || null);
-      return true;
+      return !!data?.user;
     } catch {
       return false;
     }
   }, []);
+
+  // 👉 ลงทะเบียน token getter + handler ให้ apiFetch ใช้ทั่วแอป
+  useEffect(() => {
+    configureApiAuth({
+      getAccessToken: () => accessTokenRef.current,
+      onUnauthorized: refresh,
+    });
+  }, [refresh]);
 
   useEffect(() => {
     (async () => {
@@ -62,44 +58,30 @@ export function AuthProvider({ children }) {
   }, [fetchMe, refresh]);
 
   const signIn = useCallback(async (email, password) => {
-    const data = await apiFetch(
-      "/auth/login",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      },
-      { absoluteUrl: false }
-    );
-    accessTokenRef.current = data?.accessToken || null;
-    setUser(data?.user || null);
+    await apiFetch("/auth/login", {
+      method: "POST",
+      body: { email, password },
+    });
+    await fetchMe();
     return true;
-  }, []);
+  }, [fetchMe]);
 
   const signOut = useCallback(async () => {
     try {
-      await apiFetch("/auth/logout", { method: "POST" }, { absoluteUrl: false });
+      await apiFetch("/auth/logout", { method: "POST" });
     } catch {}
     accessTokenRef.current = null;
     setUser(null);
     return true;
   }, []);
 
+  // (ยังคง authedFetch ไว้สำหรับบางเคสที่อยาก override เป็นรายคำขอ)
   async function authedFetch(pathOrUrl, init = {}) {
-    const isAbsolute = /^https?:\/\//i.test(pathOrUrl);
-    return apiFetch(pathOrUrl, init, {
-      absoluteUrl: isAbsolute,
-      getAccessToken: () => accessTokenRef.current,
-      onUnauthorized: refresh, // 401 → refresh แล้ว retry (ตาม helper)
-    });
+    const isAbs = /^https?:\/\//i.test(pathOrUrl);
+    return apiFetch(pathOrUrl, init, { absoluteUrl: isAbs });
   }
 
-  // ──────────────────────────────────────────────────────────────
-  // สิทธิ์แบบเดียวกับ middleware (pure + hook + ผ่าน context)
-  // ──────────────────────────────────────────────────────────────
-  function canVisit(path) {
-    return canVisitPure(path, user);
-  }
+  function canVisit(path) { return canVisitPure(path, user); }
 
   const value = {
     isReady,
@@ -111,7 +93,6 @@ export function AuthProvider({ children }) {
     signOut,
     refresh,
     authedFetch,
-    // guards
     canVisit,
   };
 
@@ -124,60 +105,34 @@ export function useAuth() {
   return ctx;
 }
 
-/* ──────────────────────────────────────────────────────────────
-   Role helpers (เดิม)
-   - ใช้ในคอมโพเนนต์:  useHasRole("admin") หรือ useHasRole(["admin","user"])
-   - ใช้ทั่วไป (นอก React): hasRolePure(user, "admin")
-   - hasRole() คงไว้เพื่อ backward-compat
-   ────────────────────────────────────────────────────────────── */
-
+// ---- Guards (คงเดิม) ----
 export function hasRolePure(user, roleNameMaybe) {
   const role = (user?.role?.name || user?.roleName || "").toLowerCase();
-  const targets = Array.isArray(roleNameMaybe)
-    ? roleNameMaybe
-    : [roleNameMaybe].filter(Boolean);
+  const targets = Array.isArray(roleNameMaybe) ? roleNameMaybe : [roleNameMaybe].filter(Boolean);
   return targets.map((t) => String(t).toLowerCase()).includes(role);
 }
-
 export function useHasRole(roleNameMaybe) {
   const { user } = useAuth();
   return hasRolePure(user, roleNameMaybe);
 }
-
-// DEPRECATED (คงไว้): ดูหมายเหตุในก่อนหน้า
 export function hasRole(userOrRoleName, roleNameMaybe) {
-  if (typeof userOrRoleName === "string") {
-    return useHasRole(userOrRoleName);
-  }
+  if (typeof userOrRoleName === "string") return useHasRole(userOrRoleName);
   return hasRolePure(userOrRoleName, roleNameMaybe);
 }
-
-/* ──────────────────────────────────────────────────────────────
-   Path guards ให้ตรงกับ middleware
-   - canVisitPure(path, user): ใช้ได้ทุกที่ (pure)
-   - useCanVisit(path): ใช้ใน component
-   ────────────────────────────────────────────────────────────── */
 export function canVisitPure(path, user) {
   if (!user) return false;
   if (isAdmin(user)) return true;
-
   const rule = findRule(path);
-  if (!rule) return true; // ไม่มีข้อกำหนด → ผ่าน
-
+  if (!rule) return true;
   const { require = {} } = rule;
   const codes = userDeptCodes(user);
   const rank = userRank(user);
-
   if (require.deptAny?.length) {
-    const ok = require.deptAny.some((c) =>
-      codes.has(String(c).toUpperCase())
-    );
+    const ok = require.deptAny.some((c) => codes.has(String(c).toUpperCase()));
     if (!ok) return false;
   }
   if (require.deptAll?.length) {
-    const ok = require.deptAll.every((c) =>
-      codes.has(String(c).toUpperCase())
-    );
+    const ok = require.deptAll.every((c) => codes.has(String(c).toUpperCase()));
     if (!ok) return false;
   }
   if (require.minRank) {
@@ -186,7 +141,6 @@ export function canVisitPure(path, user) {
   }
   return true;
 }
-
 export function useCanVisit(path) {
   const { user } = useAuth();
   return canVisitPure(path, user);

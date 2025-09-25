@@ -23,7 +23,7 @@ export default function ForgotPasswordDialog({
     e?.preventDefault();
     setBusy(true);
     try {
-      await apiFetch("/auth/forgot-password", {
+      await apiFetch("/api/auth/forgot-password", {
         method: "POST",
         body: { email },
       });

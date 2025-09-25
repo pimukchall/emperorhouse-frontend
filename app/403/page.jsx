@@ -20,7 +20,7 @@ export default function ForbiddenPage() {
     } catch {
       // ignore
     } finally {
-      router.push(`/auth/login?callbackUrl=${encodeURIComponent(pathname || "/")}`);
+      router.push(`/api/auth/login?callbackUrl=${encodeURIComponent(pathname || "/")}`);
     }
   }
 

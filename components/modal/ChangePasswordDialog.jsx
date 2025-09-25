@@ -51,7 +51,7 @@ export default function ChangePasswordDialog({ open, onClose }) {
 
     setBusy(true);
     try {
-      await apiFetch("/auth/change-password", {
+      await apiFetch("/api/auth/change-password", {
         method: "POST",
         body: { currentPassword, newPassword },
       });

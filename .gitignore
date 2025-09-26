@@ -55,7 +55,6 @@ uploads/
 firebase_storage_key.json
 
 .env
-.env.*
 .env.local
 .env.*.local
 

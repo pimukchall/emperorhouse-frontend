@@ -1,136 +1,28 @@
-// src/components/MobileMenu.jsx
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { MobileNavItem } from "./NavItem";
-import {
-  Home,
-  Info,
-  Wrench,
-  Mail,
-  MessageSquare,
-  ChevronDown,
-  Shield,
-  Building2,
-  Users,
-  ClipboardList,
-  BarChart3,
-} from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import AvatarButton from "./AvatarButton";
 import { Button } from "@/components/ui/button";
 import StatefulButton from "@/components/ui/stateful-button";
 import ThemeToggle from "@/components/ui/ThemeToggle";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
-// เปลี่ยนเป็น provider ที่เราใช้จริง
 import { useAuth } from "@/components/local-auth";
-
-// ใช้กฎ/ตัวช่วยเดียวกับ middleware
-import { findRule, isAdmin, userDeptCodes, userRank, LEVEL_RANK } from "@/access/rules";
-
-// canVisit (UI) — คิดจากกฎกลางแบบเดียวกับ middleware
-function canVisit(path, user) {
-  if (!user) return false;
-  if (isAdmin(user)) return true;
-  const rule = findRule(path);
-  if (!rule) return true; // ไม่มีข้อกำหนด = ผ่าน
-  const { require = {} } = rule;
-  const codes = userDeptCodes(user);
-  const rank  = userRank(user);
-
-  if (require.deptAny?.length && !require.deptAny.some(c => codes.has(String(c).toUpperCase()))) return false;
-  if (require.deptAll?.length && !require.deptAll.every(c => codes.has(String(c).toUpperCase()))) return false;
-  if (require.minRank) {
-    const need = LEVEL_RANK[String(require.minRank).toUpperCase()] || 0;
-    if (rank < need) return false;
-  }
-  return true;
-}
-
-// กลุ่มรายการแบบพับได้บนมือถือ
-function Group({ id, label, Icon, open, onToggle, items, onItemClick }) {
-  return (
-    <>
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls={`${id}-group`}
-        onClick={onToggle}
-        className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left text-gray-700 hover:bg-black/5 dark:text-gray-300 dark:hover:bg:white/5"
-      >
-        <span className="flex items-center gap-3">
-          <Icon className="h-5 w-5" />
-          {label}
-        </span>
-        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            id={`${id}-group`}
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            className="overflow-hidden"
-          >
-            <div className="ml-8 mt-1 flex flex-col gap-1 border-l border-black/10 pl-3 dark:border-white/10">
-              {items.map((it) => (
-                <Link
-                  key={it.href}
-                  href={it.href}
-                  onClick={onItemClick}
-                  className="flex items-center gap-3 rounded-md px-3 py-2.5 text-gray-700 hover:bg-black/5 dark:text-gray-300 dark:hover:bg-white/5"
-                >
-                  {it.icon ? <it.icon className="h-5 w-5" /> : null}
-                  {it.label}
-                </Link>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
-  );
-}
+import { BASE_LINKS, visibleCategories } from "@/config/routes";
+import { ChevronDown } from "lucide-react";
+import { MobileNavItem } from "./NavItem";
 
 export function MobileMenu({ open, onClose }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, signOut } = useAuth();
+  const categories = visibleCategories(user);
 
-  const [hrOpen, setHrOpen] = useState(false);
-  const [adminOpen, setAdminOpen] = useState(false);
+  const [openId, setOpenId] = useState(null);
+  const toggle = (id) => setOpenId((v) => (v === id ? null : id));
 
   if (!open) return null;
-
-  const base = [
-    { label: "Home", href: "/", icon: Home },
-    { label: "About", href: "#about", icon: Info },
-    { label: "Services", href: "#services", icon: Wrench },
-    { label: "Contact", href: "/contact", icon: Mail },
-  ];
-
-  const toggleGroup = (key) => {
-    if (key === "hr") {
-      setHrOpen((v) => {
-        const next = !v;
-        if (next) setAdminOpen(false);
-        return next;
-      });
-    } else if (key === "admin") {
-      setAdminOpen((v) => {
-        const next = !v;
-        if (next) setHrOpen(false);
-        return next;
-      });
-    }
-  };
-
-  const showHR = !!user && canVisit("/hr", user);
-  const showAdmin = !!user && canVisit("/admin", user);
 
   return (
     <AnimatePresence>
@@ -142,45 +34,21 @@ export function MobileMenu({ open, onClose }) {
         className="lg:hidden z-[55] overflow-hidden bg-white dark:bg-neutral-900 shadow-xl border border-black/10 dark:border-white/10 rounded-2xl mx-3 mt-2"
       >
         <div className="flex flex-col p-4 gap-1">
-          {base.map((item) => (
+          {BASE_LINKS.map((item) => (
             <MobileNavItem key={item.href} item={item} onClick={onClose} />
           ))}
 
-          {showHR && (
-            <Group
-              id="hr-mobile"
-              label="HR"
-              Icon={MessageSquare}
-              open={hrOpen}
-              onToggle={() => toggleGroup("hr")}
+          {categories.map((cat) => (
+            <CategoryGroup
+              key={cat.id}
+              category={cat}
+              open={openId === cat.id}
+              onToggle={() => toggle(cat.id)}
               onItemClick={onClose}
-              items={[
-                { label: "LineOA", href: "/hr/lineoa", icon: MessageSquare },
-                { label: "Evaluations", href: "/hr/evaluations", icon: ClipboardList },
-                { label: "HR Stats (สถิติรวม)", href: "/hr/evaluations/stats", icon: BarChart3 },
-              ]}
             />
-          )}
+          ))}
 
-          {showAdmin && (
-            <Group
-              id="admin-mobile"
-              label="Admin"
-              Icon={Shield}
-              open={adminOpen}
-              onToggle={() => toggleGroup("admin")}
-              onItemClick={onClose}
-              items={[
-                { label: "Departments", href: "/admin/departments", icon: Building2 },
-                { label: "Roles",       href: "/admin/roles",       icon: Shield },
-                { label: "Users",       href: "/admin/users",       icon: Users },
-                { label: "Contacts",    href: "/admin/contacts",    icon: Mail },
-                { label: "Organizations", href: "/admin/organizations", icon: ClipboardList },
-              ]}
-            />
-          )}
-
-          <div className="my-2 h-px bg-black/10 dark:bg:white/10" />
+          <div className="my-2 h-px bg-black/10 dark:bg-white/10" />
 
           <div className="mt-2 space-y-3">
             <div className="flex flex-col gap-3 rounded-xl bg-black/5 px-3 py-2 dark:bg-white/5">
@@ -220,7 +88,6 @@ export function MobileMenu({ open, onClose }) {
                   onClick={() =>
                     signOut().then(() => {
                       onClose();
-                      // ใช้เส้นทาง auth ใหม่
                       router.push("/auth/login");
                     })
                   }
@@ -232,7 +99,6 @@ export function MobileMenu({ open, onClose }) {
                   className="h-9 w-full rounded-full"
                   onClick={() => {
                     onClose();
-                    // ใช้เส้นทาง auth ใหม่
                     router.push(`/auth/login?callbackUrl=${encodeURIComponent(pathname || "/")}`);
                   }}
                 >
@@ -250,5 +116,53 @@ export function MobileMenu({ open, onClose }) {
         <div className="h-3" style={{ paddingBottom: "env(safe-area-inset-bottom)" }} />
       </motion.div>
     </AnimatePresence>
+  );
+}
+
+function CategoryGroup({ category, open, onToggle, onItemClick }) {
+  const Icon = category.icon;
+  return (
+    <>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={`${category.id}-group`}
+        onClick={onToggle}
+        className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left text-gray-700 hover:bg-black/5 dark:text-gray-300 dark:hover:bg:white/5 dark:hover:bg-white/5"
+      >
+        <span className="flex items-center gap-3">
+          {Icon ? <Icon className="h-5 w-5" /> : null}
+        {category.label}
+        </span>
+        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            id={`${category.id}-group`}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="overflow-hidden"
+          >
+            <div className="ml-8 mt-1 flex flex-col gap-1 border-l border-black/10 pl-3 dark:border-white/10">
+              {category.links.map((it) => (
+                <Link
+                  key={it.href}
+                  href={it.href}
+                  onClick={onItemClick}
+                  className="flex items-center gap-3 rounded-md px-3 py-2.5 text-gray-700 hover:bg-black/5 dark:text-gray-300 dark:hover:bg-white/5"
+                >
+                  {it.icon ? <it.icon className="h-5 w-5" /> : null}
+                  {it.label}
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

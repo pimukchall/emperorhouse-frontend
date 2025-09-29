@@ -20,7 +20,7 @@ export function AuthProvider({ children }) {
 
   const refresh = useCallback(async () => {
     try {
-      const data = await apiFetch("/auth/refresh", { method: "POST" });
+      const data = await apiFetch("/api/auth/refresh", { method: "POST" });
       accessTokenRef.current = data?.accessToken || null;
       setUser(data?.user || null);
       return true;
@@ -33,7 +33,7 @@ export function AuthProvider({ children }) {
 
   const fetchMe = useCallback(async () => {
     try {
-      const data = await apiFetch("/auth/me");
+      const data = await apiFetch("/api/auth/me");
       setUser(data?.user || null);
       return !!data?.user;
     } catch {
@@ -57,18 +57,21 @@ export function AuthProvider({ children }) {
     })();
   }, [fetchMe, refresh]);
 
-  const signIn = useCallback(async (email, password) => {
-    await apiFetch("/auth/login", {
-      method: "POST",
-      body: { email, password },
-    });
-    await fetchMe();
-    return true;
-  }, [fetchMe]);
+  const signIn = useCallback(
+    async (email, password) => {
+      await apiFetch("/api/auth/login", {
+        method: "POST",
+        body: { email, password },
+      });
+      await fetchMe();
+      return true;
+    },
+    [fetchMe]
+  );
 
   const signOut = useCallback(async () => {
     try {
-      await apiFetch("/auth/logout", { method: "POST" });
+      await apiFetch("/api/auth/logout", { method: "POST" });
     } catch {}
     accessTokenRef.current = null;
     setUser(null);
@@ -81,7 +84,9 @@ export function AuthProvider({ children }) {
     return apiFetch(pathOrUrl, init, { absoluteUrl: isAbs });
   }
 
-  function canVisit(path) { return canVisitPure(path, user); }
+  function canVisit(path) {
+    return canVisitPure(path, user);
+  }
 
   const value = {
     isReady,
@@ -108,7 +113,9 @@ export function useAuth() {
 // ---- Guards (คงเดิม) ----
 export function hasRolePure(user, roleNameMaybe) {
   const role = (user?.role?.name || user?.roleName || "").toLowerCase();
-  const targets = Array.isArray(roleNameMaybe) ? roleNameMaybe : [roleNameMaybe].filter(Boolean);
+  const targets = Array.isArray(roleNameMaybe)
+    ? roleNameMaybe
+    : [roleNameMaybe].filter(Boolean);
   return targets.map((t) => String(t).toLowerCase()).includes(role);
 }
 export function useHasRole(roleNameMaybe) {

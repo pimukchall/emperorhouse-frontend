@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { apiUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { UserRound } from "lucide-react";
 
@@ -16,17 +15,17 @@ function initialsFrom(name, email) {
 }
 
 export default function AvatarButton({
-  href = "/profile",
+  href = "/me",
   name,
   email,
-  photo,           // อาจเป็น URL ภายนอก
-  fetchUrl = null, // เช่น `/profile/files/user/avatar/:id`
+  photo,
+  fetchUrl = null,
   onClick,
   className,
-  fallback = "icon", // "icon" | "initials"
-  version,           // ใช้ cache-bust
+  fallback = "icon",
+  version,
 }) {
-  const [autoPhoto, setAutoPhoto] = useState(null); // blob: URL จาก fetch
+  const [autoPhoto, setAutoPhoto] = useState(null);
   const [imgError, setImgError] = useState(false);
 
   const currentBlobUrl = useRef(null);
@@ -56,7 +55,7 @@ export default function AvatarButton({
 
       try {
         const hasQ = fetchUrl.includes("?");
-        const url = apiUrl(`${fetchUrl}${version ? `${hasQ ? "&" : "?"}ts=${encodeURIComponent(String(version))}` : ""}`);
+        const url = `${fetchUrl}${version ? `${hasQ ? "&" : "?"}ts=${encodeURIComponent(String(version))}` : ""}`;
 
         const r = await fetch(url, {
           signal: ctrl.signal,
@@ -99,7 +98,6 @@ export default function AvatarButton({
   const resolved = !imgError ? (photoWithTs ?? autoPhoto) : null;
   const isBlob = typeof resolved === "string" && resolved.startsWith("blob:");
   const showIconFallback = !resolved && fallback === "icon";
-  const showInitialsFallback = !resolved && fallback === "initials";
 
   const handleLoaded = useCallback(() => {
     while (urlsToRevoke.current.length) {

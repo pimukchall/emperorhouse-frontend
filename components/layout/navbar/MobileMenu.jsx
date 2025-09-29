@@ -88,7 +88,7 @@ export function MobileMenu({ open, onClose }) {
                   onClick={() =>
                     signOut().then(() => {
                       onClose();
-                      router.push("/auth/login");
+                      router.push("/login");
                     })
                   }
                 >
@@ -99,7 +99,7 @@ export function MobileMenu({ open, onClose }) {
                   className="h-9 w-full rounded-full"
                   onClick={() => {
                     onClose();
-                    router.push(`/auth/login?callbackUrl=${encodeURIComponent(pathname || "/")}`);
+                    router.push(`/login?callbackUrl=${encodeURIComponent(pathname || "/")}`);
                   }}
                 >
                   Get Started

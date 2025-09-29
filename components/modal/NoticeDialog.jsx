@@ -41,7 +41,9 @@ export default function NoticeDialog({
       footer={footerButtons ?? <Button onClick={onClose}>ปิด</Button>}
     >
       <div className={`rounded-md ${t.bg} ${t.ring} p-3`}>
-        <p className={`text-sm ${t.text}`}>{message}</p>
+        <p className={`text-sm ${t.text}`}>
+          {typeof message === "string" ? message : JSON.stringify(message)}
+        </p>
       </div>
     </Modal>
   );

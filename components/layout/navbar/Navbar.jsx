@@ -31,7 +31,7 @@ export default function Navbar() {
         await signOut();
       },
     });
-    if (ok) router.push("/auth/login");
+    if (ok) router.push("/login");
   }
 
   return (
@@ -55,7 +55,7 @@ export default function Navbar() {
               <AvatarButton
                 name={user?.name}
                 email={user?.email}
-                fetchUrl={user?.id ? `/profile/files/user/avatar/${user.id}` : undefined}
+                fetchUrl={user?.id ? `/api/files/user/avatar/${user.id}` : undefined}
               />
             )}
             <ThemeToggle />
@@ -73,7 +73,7 @@ export default function Navbar() {
               <Button
                 className="h-9 rounded-full"
                 onClick={() =>
-                  router.push(`/auth/login?callbackUrl=${encodeURIComponent(pathname)}`)
+                  router.push(`/login?callbackUrl=${encodeURIComponent(pathname)}`)
                 }
               >
                 เข้าสู่ระบบ

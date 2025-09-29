@@ -19,7 +19,7 @@ export default function ResetPasswordDialog({ open, onClose, token }) {
     e?.preventDefault();
     setBusy(true);
     try {
-      await apiFetch("/auth/reset-password", {
+      await apiFetch("/api/auth/reset-password", {
         method: "POST",
         body: { token, password },
       });

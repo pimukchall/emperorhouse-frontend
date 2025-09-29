@@ -99,7 +99,9 @@ __turbopack_context__.s([
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$modal$2f$Modal$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/modal/Modal.jsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/ui/button.jsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
 "use client";
+;
 ;
 ;
 ;
@@ -123,9 +125,28 @@ const tone = {
         title: "แจ้งเตือน"
     }
 };
+function normalizeMessage(msg) {
+    var _msg_data, _msg_data1;
+    // 1) ปล่อย ReactNode ผ่านไปได้เลย
+    if (/*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].isValidElement(msg)) return msg;
+    // 2) string → คืนตรงๆ
+    if (typeof msg === "string") return msg;
+    // 3) Error instance
+    if (msg instanceof Error) return msg.message || "Unexpected error";
+    // 4) รูปแบบที่พบบ่อยจาก backend
+    const fromCommonShape = (msg === null || msg === void 0 ? void 0 : msg.message) || (msg === null || msg === void 0 ? void 0 : msg.error) || (msg === null || msg === void 0 ? void 0 : (_msg_data = msg.data) === null || _msg_data === void 0 ? void 0 : _msg_data.message) || (msg === null || msg === void 0 ? void 0 : (_msg_data1 = msg.data) === null || _msg_data1 === void 0 ? void 0 : _msg_data1.error);
+    if (typeof fromCommonShape === "string") return fromCommonShape;
+    // 5) fallback: stringify แบบสั้นๆ
+    try {
+        return JSON.stringify(msg);
+    } catch (e) {
+        return "Unknown error";
+    }
+}
 function NoticeDialog(param) {
     let { open, onClose, type = "info", title, message, footerButtons } = param;
     const t = tone[type] || tone.info;
+    const content = normalizeMessage(message);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$modal$2f$Modal$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
         open: open,
         onClose: onClose,
@@ -136,27 +157,36 @@ function NoticeDialog(param) {
             children: "ปิด"
         }, void 0, false, {
             fileName: "[project]/components/modal/NoticeDialog.jsx",
-            lineNumber: 41,
+            lineNumber: 71,
             columnNumber: 32
         }, void 0),
         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
             className: "rounded-md ".concat(t.bg, " ").concat(t.ring, " p-3"),
-            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+            role: "status",
+            "aria-live": "polite",
+            children: typeof content === "string" ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                 className: "text-sm ".concat(t.text),
-                children: typeof message === "string" ? message : JSON.stringify(message)
+                children: content
             }, void 0, false, {
                 fileName: "[project]/components/modal/NoticeDialog.jsx",
-                lineNumber: 44,
-                columnNumber: 9
+                lineNumber: 76,
+                columnNumber: 11
+            }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "text-sm ".concat(t.text),
+                children: content
+            }, void 0, false, {
+                fileName: "[project]/components/modal/NoticeDialog.jsx",
+                lineNumber: 78,
+                columnNumber: 11
             }, this)
         }, void 0, false, {
             fileName: "[project]/components/modal/NoticeDialog.jsx",
-            lineNumber: 43,
+            lineNumber: 73,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/components/modal/NoticeDialog.jsx",
-        lineNumber: 36,
+        lineNumber: 66,
         columnNumber: 5
     }, this);
 }

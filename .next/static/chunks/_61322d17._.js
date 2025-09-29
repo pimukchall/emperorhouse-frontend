@@ -3,53 +3,84 @@
 "use strict";
 
 // lib/api.js
+// ==============================
+// Config
+// ==============================
 __turbopack_context__.s([
     "apiFetch",
     ()=>apiFetch,
+    "apiURL",
+    ()=>apiURL,
     "configureApiAuth",
     ()=>configureApiAuth,
+    "isAbsoluteUrl",
+    ()=>isAbsoluteUrl,
     "parseResponse",
     ()=>parseResponse
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = /*#__PURE__*/ __turbopack_context__.i("[project]/node_modules/next/dist/build/polyfills/process.js [app-client] (ecmascript)");
-const BASE = ("TURBOPACK compile-time value", "http://localhost:4000") || "http://localhost:4000";
-// ======== Global auth config (ให้ AuthProvider มา register) ========
+const BASE = (("TURBOPACK compile-time value", "http://localhost:4000") || "http://localhost:4000").trim();
+// ==============================
+// Internal state (registered by AuthProvider)
+// ==============================
 let _getAccessToken = null;
 let _onUnauthorized = null;
-let refreshPromise = null;
-function configureApiAuth() {
-    let { getAccessToken, onUnauthorized } = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
-    _getAccessToken = typeof getAccessToken === "function" ? getAccessToken : null;
-    _onUnauthorized = typeof onUnauthorized === "function" ? onUnauthorized : null;
-}
+// ใช้กัน “stampede” ตอน refresh token ให้ run ครั้งเดียวแล้ว await ร่วมกัน
+let _refreshPromise = null;
+// ==============================
+// Small utilities
+// ==============================
 function isAbsoluteUrl(u) {
     return /^https?:\/\//i.test(String(u || ""));
+}
+function trimTrailingSlash(s) {
+    return String(s || "").replace(/\/+$/g, "");
+}
+function trimLeadingSlash(s) {
+    return String(s || "").replace(/^\/+/g, "");
+}
+function apiURL() {
+    let pathOrUrl = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "";
+    const u = String(pathOrUrl || "");
+    if (!u) return trimTrailingSlash(BASE); // กรณีอยากได้ BASE เปล่า ๆ
+    if (isAbsoluteUrl(u)) return u;
+    const base = trimTrailingSlash(BASE);
+    const path = "/" + trimLeadingSlash(u); // บังคับให้ขึ้นต้นด้วย /
+    return base + path;
 }
 async function parseResponse(res) {
     const ct = res.headers.get("content-type") || "";
     const data = ct.includes("application/json") ? await res.json() : await res.text();
     return data;
 }
-function isAuthRefreshUrl(url) {
+/** ตรวจว่าเป็น URL refresh token (กันวนลูป onUnauthorized) */ function isAuthRefreshUrl(url) {
     try {
         const u = new URL(url, BASE);
+        // ตรงกับ backend path: /api/auth/refresh
         return /\/api\/auth\/refresh($|\?)/i.test(u.pathname);
     } catch (e) {
         return false;
     }
 }
-async function apiFetch(path) {
+function configureApiAuth() {
+    let { getAccessToken, onUnauthorized } = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
+    _getAccessToken = typeof getAccessToken === "function" ? getAccessToken : null;
+    _onUnauthorized = typeof onUnauthorized === "function" ? onUnauthorized : null;
+}
+async function apiFetch(pathOrUrl) {
     let init = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {}, opts = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : {};
-    const url = isAbsoluteUrl(path) ? path : "".concat(BASE).concat(path);
+    // 1) สร้าง URL
+    const url = isAbsoluteUrl(pathOrUrl) ? String(pathOrUrl) : apiURL(pathOrUrl);
+    // 2) เตรียม header + body
     const isForm = typeof FormData !== "undefined" && (init === null || init === void 0 ? void 0 : init.body) instanceof FormData;
     const headers = new Headers((init === null || init === void 0 ? void 0 : init.headers) || {});
     if (!isForm && (init === null || init === void 0 ? void 0 : init.body) && typeof init.body === "object" && !headers.has("content-type")) {
         headers.set("content-type", "application/json");
     }
-    // ---- เลือก token getter / unauthorized handler ----
+    // 3) เลือก token getter / unauthorized handler (สามารถ override รายคำขอได้)
     const getAccessToken = typeof opts.getAccessToken === "function" ? opts.getAccessToken : _getAccessToken;
     const onUnauthorized = typeof opts.onUnauthorized === "function" ? opts.onUnauthorized : _onUnauthorized;
-    // ---- แนบ Bearer ถ้ามี ----
+    // 4) แนบ Bearer ถ้ามี
     if (typeof getAccessToken === "function") {
         const token = getAccessToken();
         if (token && !headers.has("authorization")) {
@@ -64,25 +95,29 @@ async function apiFetch(path) {
         headers,
         body: isForm ? init.body : (init === null || init === void 0 ? void 0 : init.body) && typeof init.body === "object" ? JSON.stringify(init.body) : init === null || init === void 0 ? void 0 : init.body
     };
+    // 5) ยิงครั้งที่ 1
     const allowRefresh = !isAuthRefreshUrl(url);
-    const retryOnce = opts.retryOnce !== false; // default true
+    const retryOnce = opts.retryOnce !== false; // default = true
     let res = await fetch(url, requestInit);
-    // ถ้า 401 และอนุญาต refresh
+    // 6) ถ้า 401 และอนุญาต refresh -> เรียก onUnauthorized() แบบรวมศูนย์
     if (res.status === 401 && allowRefresh && typeof onUnauthorized === "function") {
-        if (!refreshPromise) {
-            refreshPromise = (async ()=>{
+        if (!_refreshPromise) {
+            _refreshPromise = (async ()=>{
                 try {
                     const ok = await onUnauthorized();
                     return !!ok;
                 } finally{
+                    // ปล่อยให้คำขออื่น ๆ ได้ await ก่อน แล้วค่อยล้างตัวแปร
                     setTimeout(()=>{
-                        refreshPromise = null;
+                        _refreshPromise = null;
                     }, 0);
                 }
             })();
         }
-        const ok = await refreshPromise;
+        const ok = await _refreshPromise;
+        // 7) ถ้า refresh สำเร็จ และอนุญาต retry
         if (ok && retryOnce) {
+            // แนบ token ล่าสุดก่อนยิงซ้ำ
             if (typeof getAccessToken === "function") {
                 const t2 = getAccessToken();
                 if (t2) requestInit.headers.set("authorization", "Bearer ".concat(t2));
@@ -90,6 +125,7 @@ async function apiFetch(path) {
             res = await fetch(url, requestInit);
         }
     }
+    // 8) parse + throw ถ้าไม่ ok
     const data = await parseResponse(res);
     if (!res.ok) {
         const msg = data && (data.error || data.message) || (typeof data === "string" ? data : "Request failed");
@@ -100,6 +136,7 @@ async function apiFetch(path) {
     }
     return data;
 }
+;
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
     __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
 }

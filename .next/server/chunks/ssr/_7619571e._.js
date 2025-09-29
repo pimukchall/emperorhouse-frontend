@@ -92,7 +92,9 @@ __turbopack_context__.s([
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react-jsx-dev-runtime.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$modal$2f$Modal$2e$jsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/modal/Modal.jsx [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$button$2e$jsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/ui/button.jsx [app-ssr] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react.js [app-ssr] (ecmascript)");
 "use client";
+;
 ;
 ;
 ;
@@ -116,8 +118,26 @@ const tone = {
         title: "แจ้งเตือน"
     }
 };
+function normalizeMessage(msg) {
+    // 1) ปล่อย ReactNode ผ่านไปได้เลย
+    if (/*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"].isValidElement(msg)) return msg;
+    // 2) string → คืนตรงๆ
+    if (typeof msg === "string") return msg;
+    // 3) Error instance
+    if (msg instanceof Error) return msg.message || "Unexpected error";
+    // 4) รูปแบบที่พบบ่อยจาก backend
+    const fromCommonShape = msg?.message || msg?.error || msg?.data?.message || msg?.data?.error;
+    if (typeof fromCommonShape === "string") return fromCommonShape;
+    // 5) fallback: stringify แบบสั้นๆ
+    try {
+        return JSON.stringify(msg);
+    } catch  {
+        return "Unknown error";
+    }
+}
 function NoticeDialog({ open, onClose, type = "info", title, message, footerButtons }) {
     const t = tone[type] || tone.info;
+    const content = normalizeMessage(message);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$modal$2f$Modal$2e$jsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
         open: open,
         onClose: onClose,
@@ -128,27 +148,36 @@ function NoticeDialog({ open, onClose, type = "info", title, message, footerButt
             children: "ปิด"
         }, void 0, false, {
             fileName: "[project]/components/modal/NoticeDialog.jsx",
-            lineNumber: 41,
+            lineNumber: 71,
             columnNumber: 32
         }, void 0),
         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
             className: `rounded-md ${t.bg} ${t.ring} p-3`,
-            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+            role: "status",
+            "aria-live": "polite",
+            children: typeof content === "string" ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                 className: `text-sm ${t.text}`,
-                children: typeof message === "string" ? message : JSON.stringify(message)
+                children: content
             }, void 0, false, {
                 fileName: "[project]/components/modal/NoticeDialog.jsx",
-                lineNumber: 44,
-                columnNumber: 9
+                lineNumber: 76,
+                columnNumber: 11
+            }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: `text-sm ${t.text}`,
+                children: content
+            }, void 0, false, {
+                fileName: "[project]/components/modal/NoticeDialog.jsx",
+                lineNumber: 78,
+                columnNumber: 11
             }, this)
         }, void 0, false, {
             fileName: "[project]/components/modal/NoticeDialog.jsx",
-            lineNumber: 43,
+            lineNumber: 73,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/components/modal/NoticeDialog.jsx",
-        lineNumber: 36,
+        lineNumber: 66,
         columnNumber: 5
     }, this);
 }

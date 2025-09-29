@@ -185,7 +185,7 @@ export default function MeClient() {
       reload?.();
       setNotice({ open: true, type: "success", message: okMessage });
     } catch (e) {
-      setNotice({ open: true, type: "error", message: e?.data?.error || e?.message || "อัปโหลดไม่สำเร็จ" });
+      setNotice({ open: true, type: "error", message: e?.data?.message || e?.data?.error || e?.message || "อัปโหลดไม่สำเร็จ" });
     }
   }
 
@@ -249,20 +249,20 @@ export default function MeClient() {
             </div>
           </div>
 
-      <SignatureSection
-        signatureUrl={signatureUrl}
-        signError={signError}
-        setSignError={setSignError}
-        onUploadSignature={onUploadSignature}
-        showDrawPad={showDrawPad}
-        setShowDrawPad={setShowDrawPad}
-        setSignTick={setSignTick}
-        setNotice={setNotice}
-        reload={reload}
-      />
+          <SignatureSection
+            signatureUrl={signatureUrl}
+            signError={signError}
+            setSignError={setSignError}
+            onUploadSignature={onUploadSignature}
+            showDrawPad={showDrawPad}
+            setShowDrawPad={setShowDrawPad}
+            setSignTick={setSignTick}
+            setNotice={setNotice}
+            reload={reload}
+          />
         </div>
 
-                {/* Profile form (Editable) */}
+        {/* Profile form (Editable) */}
         <form className="mt-6 space-y-4" onSubmit={onSubmit}>
           <div className="space-y-1">
             <label className="text-sm text-neutral-700 dark:text-neutral-300">องค์กร (Organization)</label>
@@ -331,81 +331,101 @@ export default function MeClient() {
           </div>
         </form>
 
-              {/* Readonly blocks */}
-              <div className="grid gap-6 md:grid-cols-2">
-                <BackgroundGradient className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-lg dark:border-neutral-800 dark:bg-neutral-950">
-                  <h3 className="text-base font-semibold mb-4">ข้อมูลพนักงาน (อ่านอย่างเดียว)</h3>
-        
-                  <ReadonlyRow label="Employee Code" value={readonly.employeeCode} />
-                  <ReadonlyRow label="Employee Type" value={readonly.employeeType} />
-                  <ReadonlyRow label="Contract Type" value={readonly.contractType} />
-                  <ReadonlyRow label="Gender" value={readonly.gender} />
-        
-                  <div className="grid gap-4 sm:grid-cols-2 mt-2">
-                    <ReadonlyRow label="Birth Date" value={readonly.birthDate} />
-                    <ReadonlyRow label="Start Date" value={readonly.startDate} />
-                    <ReadonlyRow label="Probation End" value={readonly.probationEndDate} />
-                    <ReadonlyRow label="Resigned At" value={readonly.resignedAt} />
-                  </div>
-                </BackgroundGradient>
-        
-                <BackgroundGradient className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-lg dark:border-neutral-800 dark:bg-neutral-950">
-                  <h3 className="text-base font-semibold mb-4">สิทธิ์และสังกัด (อ่านอย่างเดียว)</h3>
-        
-                  <ReadonlyRow label="Role" value={readonly.roleName} />
-        
-                  <div className="mt-3">
-                    <div className="text-xs text-neutral-500 mb-1">Primary Department</div>
-                    {hasPrimary ? (
-                      <div className="rounded-md border px-3 py-2 text-sm">
-                        <div className="font-medium">{readonly.primaryDept.code} · {readonly.primaryDept.nameTh}</div>
-                        <div className="text-xs text-neutral-600">
-                          {readonly.primaryDept.positionLevel}
-                          {readonly.primaryDept.positionName ? ` (${readonly.primaryDept.positionName})` : ""}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-sm text-neutral-500">-</div>
-                    )}
-                  </div>
-        
-                  <div className="mt-3">
-                    <div className="text-xs text-neutral-500 mb-1">Other Active Departments</div>
-                    {readonly.otherDepts?.length ? (
-                      <div className="space-y-2">
-                        {readonly.otherDepts.map((d) => (
-                          <div key={d.id} className="rounded-md border px-3 py-2 text-sm">
-                            <div className="font-medium">{d.code} · {d.nameTh}</div>
-                            <div className="text-xs text-neutral-600">
-                              {d.positionLevel}{d.positionName ? ` (${d.positionName})` : ""}
-                        </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-sm text-neutral-500">-</div>
-                    )}
-                  </div>
-                </BackgroundGradient>
-              </div>
+        {/* Readonly blocks */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <BackgroundGradient className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-lg dark:border-neutral-800 dark:bg-neutral-950">
+            <h3 className="text-base font-semibold mb-4">ข้อมูลพนักงาน (อ่านอย่างเดียว)</h3>
 
-      <NoticeDialog open={notice.open} onClose={() => setNotice((s) => ({ ...s, open: false }))} type={notice.type} message={notice.message} />
-      <ChangePasswordDialog open={showChangePass} onClose={() => setShowChangePass(false)} />
-        </BackgroundGradient>
+            <ReadonlyRow label="Employee Code" value={readonly.employeeCode} />
+            <ReadonlyRow label="Employee Type" value={readonly.employeeType} />
+            <ReadonlyRow label="Contract Type" value={readonly.contractType} />
+            <ReadonlyRow label="Gender" value={readonly.gender} />
+
+            <div className="grid gap-4 sm:grid-cols-2 mt-2">
+              <ReadonlyRow label="Birth Date" value={readonly.birthDate} />
+              <ReadonlyRow label="Start Date" value={readonly.startDate} />
+              <ReadonlyRow label="Probation End" value={readonly.probationEndDate} />
+              <ReadonlyRow label="Resigned At" value={readonly.resignedAt} />
+            </div>
+          </BackgroundGradient>
+
+          <BackgroundGradient className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-lg dark:border-neutral-800 dark:bg-neutral-950">
+            <h3 className="text-base font-semibold mb-4">สิทธิ์และสังกัด (อ่านอย่างเดียว)</h3>
+
+            <ReadonlyRow label="Role" value={readonly.roleName} />
+
+            <div className="mt-3">
+              <div className="text-xs text-neutral-500 mb-1">Primary Department</div>
+              {hasPrimary ? (
+                <div className="rounded-md border px-3 py-2 text-sm">
+                  <div className="font-medium">{readonly.primaryDept.code} · {readonly.primaryDept.nameTh}</div>
+                  <div className="text-xs text-neutral-600">
+                    {readonly.primaryDept.positionLevel}
+                    {readonly.primaryDept.positionName ? ` (${readonly.primaryDept.positionName})` : ""}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-neutral-500">-</div>
+              )}
+            </div>
+
+            <div className="mt-3">
+              <div className="text-xs text-neutral-500 mb-1">Other Active Departments</div>
+              {readonly.otherDepts?.length ? (
+                <div className="space-y-2">
+                  {readonly.otherDepts.map((d) => (
+                    <div key={d.id} className="rounded-md border px-3 py-2 text-sm">
+                      <div className="font-medium">{d.code} · {d.nameTh}</div>
+                      <div className="text-xs text-neutral-600">
+                        {d.positionLevel}{d.positionName ? ` (${d.positionName})` : ""}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-neutral-500">-</div>
+              )}
+            </div>
+          </BackgroundGradient>
+        </div>
+
+        <NoticeDialog open={notice.open} onClose={() => setNotice((s) => ({ ...s, open: false }))} type={notice.type} message={notice.message} />
+        <ChangePasswordDialog open={showChangePass} onClose={() => setShowChangePass(false)} />
+      </BackgroundGradient>
     </main>
   );
 }
 
 /** ---------------- Signature Section ---------------- */
-function SignatureSection({ signatureUrl, signError, setSignError, onUploadSignature, showDrawPad, setShowDrawPad, setSignTick, setNotice, reload }) {
-  const previewClass = "grid place-items-center overflow-hidden rounded-md ring-1 ring-black/10 dark:ring-white/10 bg-[length:16px_16px] bg-[linear-gradient(45deg,rgba(0,0,0,.05)25%,transparent_25%),linear-gradient(-45deg,rgba(0,0,0,.05)25%,transparent_25%),linear-gradient(45deg,transparent_75%,rgba(0,0,0,.05)_75%),linear-gradient(-45deg,transparent_75%,rgba(0,0,0,.05)_75%)]";
+function SignatureSection({
+  signatureUrl,
+  signError,
+  setSignError,
+  onUploadSignature,
+  showDrawPad,
+  setShowDrawPad,
+  setSignTick,
+  setNotice,
+  reload,
+}) {
+  // แก้ string ให้ Tailwind อ่านได้ (_25% แทน 25% ติดกัน)
+  const previewClass =
+    "grid place-items-center overflow-hidden rounded-md ring-1 ring-black/10 dark:ring-white/10 bg-[length:16px_16px] bg-[linear-gradient(45deg,rgba(0,0,0,.05)_25%,transparent_25%),linear-gradient(-45deg,rgba(0,0,0,.05)_25%,transparent_25%),linear-gradient(45deg,transparent_75%,rgba(0,0,0,.05)_75%),linear-gradient(-45deg,transparent_75%,rgba(0,0,0,.05)_75%)]";
 
   return (
     <div className="flex flex-col gap-3">
       {/* Preview */}
       <div className={previewClass} style={{ width: 280, height: 90 }}>
         {signatureUrl && !signError ? (
-          <img key={signatureUrl} src={signatureUrl} alt="signature" className="h-full w-full object-contain" onLoad={() => setSignError(false)} onError={() => setSignError(true)} referrerPolicy="no-referrer" />
+          <img
+            key={signatureUrl}
+            src={signatureUrl}
+            alt="signature"
+            className="h-full w-full object-contain"
+            onLoad={() => setSignError(false)}
+            onError={() => setSignError(true)}
+            referrerPolicy="no-referrer"
+          />
         ) : (
           <div className="px-2 text-xs text-neutral-500">ยังไม่มีลายเซ็น</div>
         )}
@@ -415,10 +435,18 @@ function SignatureSection({ signatureUrl, signError, setSignError, onUploadSigna
       <div className="flex flex-wrap items-center gap-2">
         <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
           <input type="file" accept="image/*" className="hidden" onChange={(e) => onUploadSignature(e.target.files?.[0])} />
-          <span className="rounded-md border px-3 py-1.5 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900">อัปโหลดจากไฟล์…</span>
+          <span className="rounded-md border px-3 py-1.5 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900">
+            อัปโหลดจากไฟล์…
+          </span>
         </label>
 
-        <button type="button" onClick={() => setShowDrawPad((v) => !v)} className="rounded-md border px-3 py-1.5 text-sm hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900">
+        <button
+          type="button"
+          onClick={() => setShowDrawPad((v) => !v)}
+          className="rounded-md border px-3 py-1.5 text-sm hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-900"
+          aria-expanded={showDrawPad}
+          aria-controls="signature-drawpad"
+        >
           {showDrawPad ? "ซ่อนพื้นที่วาด" : "วาดลายเซ็น"}
         </button>
         <span className="text-xs text-neutral-500 ml-1">แนะนำ PNG พื้นโปร่งใส ≤ 1MB</span>
@@ -454,6 +482,20 @@ function SignatureSection({ signatureUrl, signError, setSignError, onUploadSigna
           />
         </div>
       )}
+    </div>
+  );
+}
+
+/** ---------------- Readonly row (เพิ่มให้ครบ) ---------------- */
+function ReadonlyRow({ label, value }) {
+  return (
+    <div className="space-y-1">
+      <div className="text-xs text-neutral-500">{label}</div>
+      <input
+        value={value || ""}
+        disabled
+        className="w-full rounded-md border border-neutral-200 bg-neutral-100 px-3 py-2 text-sm text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300"
+      />
     </div>
   );
 }

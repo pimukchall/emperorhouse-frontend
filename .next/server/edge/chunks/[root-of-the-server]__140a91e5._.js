@@ -23,9 +23,7 @@ __turbopack_context__.s([
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$api$2f$server$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__$3c$locals$3e$__ = __turbopack_context__.i("[project]/node_modules/next/dist/esm/api/server.js [middleware-edge] (ecmascript) <locals>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/esm/server/web/exports/index.js [middleware-edge] (ecmascript)");
 ;
-// อ่านชื่อคุกกี้จาก ENV (คั่นด้วย ,) เช่น NEXT_PUBLIC_AUTH_COOKIES="sid,access_token"
 const ENV_COOKIES = (("TURBOPACK compile-time value", "sid,access_token") || "").split(",").map((s)=>s.trim()).filter(Boolean);
-// fallback ชื่อยอดนิยม (รวม access + refresh)
 const DEFAULT_COOKIES = [
     "sid",
     "access_token",
@@ -52,17 +50,15 @@ function hasAnyAuthCookie(req) {
 }
 function redirectLogin(req) {
     const url = new URL(req.url);
-    const to = new URL("/login", req.url); // หน้า login อยู่ /login
+    const to = new URL("/login", req.url);
     to.searchParams.set("redirect", url.pathname + url.search);
     return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(to);
 }
 function middleware(req) {
     const { pathname } = new URL(req.url);
-    // ข้ามไฟล์สาธารณะ & หน้า auth กันลูป
     if (pathname.startsWith("/login") || pathname.startsWith("/register") || pathname.startsWith("/forgot-password") || pathname.startsWith("/reset-password") || pathname.startsWith("/_next") || pathname.startsWith("/favicon") || pathname.startsWith("/assets") || /\.(png|jpg|jpeg|gif|svg|ico|webp|css|js|map)$/i.test(pathname)) {
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].next();
     }
-    // เส้นทางที่ต้องล็อกอิน (หลังบ้าน)
     const protectedMatchers = [
         "/admin",
         "/hr",
@@ -71,7 +67,6 @@ function middleware(req) {
     ];
     const needAuth = protectedMatchers.some((p)=>pathname === p || pathname.startsWith(p + "/"));
     if (!needAuth) return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].next();
-    // เช็คจากคุกกี้อย่างเดียว (Edge ไม่ควร fetch ไป BE)
     if (!hasAnyAuthCookie(req)) {
         if (("TURBOPACK compile-time value", "development") !== "production" && process.env.NEXT_PUBLIC_ALLOW_NOCOOKIE_DEV === "1") {
             return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].next();

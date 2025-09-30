@@ -10,7 +10,7 @@ const StatefulButton = forwardRef(function StatefulButton(
     disabled,
     className,
     children,
-    ...rest // ← จะไม่มี loading ติดไปใน DOM แล้ว
+    ...rest
   },
   ref
 ) {

@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 
-// อ่านชื่อคุกกี้จาก ENV (คั่นด้วย ,) เช่น NEXT_PUBLIC_AUTH_COOKIES="sid,access_token"
 const ENV_COOKIES = (process.env.NEXT_PUBLIC_AUTH_COOKIES || "")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
 
-// fallback ชื่อยอดนิยม (รวม access + refresh)
 const DEFAULT_COOKIES = [
   "sid",
   "access_token",
@@ -31,7 +29,7 @@ function hasAnyAuthCookie(req) {
 
 function redirectLogin(req) {
   const url = new URL(req.url);
-  const to = new URL("/login", req.url); // หน้า login อยู่ /login
+  const to = new URL("/login", req.url);
   to.searchParams.set("redirect", url.pathname + url.search);
   return NextResponse.redirect(to);
 }
@@ -39,7 +37,6 @@ function redirectLogin(req) {
 export function middleware(req) {
   const { pathname } = new URL(req.url);
 
-  // ข้ามไฟล์สาธารณะ & หน้า auth กันลูป
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/register") ||
@@ -53,14 +50,12 @@ export function middleware(req) {
     return NextResponse.next();
   }
 
-  // เส้นทางที่ต้องล็อกอิน (หลังบ้าน)
   const protectedMatchers = ["/admin", "/hr", "/approvals", "/me"];
   const needAuth = protectedMatchers.some(
     (p) => pathname === p || pathname.startsWith(p + "/")
   );
   if (!needAuth) return NextResponse.next();
 
-  // เช็คจากคุกกี้อย่างเดียว (Edge ไม่ควร fetch ไป BE)
   if (!hasAnyAuthCookie(req)) {
     if (
       process.env.NODE_ENV !== "production" &&
@@ -74,7 +69,6 @@ export function middleware(req) {
   return NextResponse.next();
 }
 
-// ตรวจทุกเส้นทางยกเว้นไฟล์ static/API
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };

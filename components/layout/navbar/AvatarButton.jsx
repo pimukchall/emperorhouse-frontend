@@ -10,7 +10,10 @@ function initialsFrom(name, email) {
   const src = (name && name.trim()) || (email && email.split("@")[0]) || "";
   if (!src) return "?";
   const parts = src.split(/\s+/).filter(Boolean);
-  const pick = parts.length >= 2 ? parts[0][0] + parts[parts.length - 1][0] : src.slice(0, 2);
+  const pick =
+    parts.length >= 2
+      ? parts[0][0] + parts[parts.length - 1][0]
+      : src.slice(0, 2);
   return pick.toUpperCase();
 }
 
@@ -35,16 +38,22 @@ export default function AvatarButton({
   const photoWithTs = useMemo(() => {
     if (!photo) return null;
     try {
-      const u = new URL(photo, typeof window !== "undefined" ? window.location.origin : "http://localhost");
+      const u = new URL(
+        photo,
+        typeof window !== "undefined"
+          ? window.location.origin
+          : "http://localhost"
+      );
       if (version) u.searchParams.set("ts", String(version));
       return u.toString();
     } catch {
       const hasQ = photo.includes("?");
-      return version ? `${photo}${hasQ ? "&" : "?"}ts=${encodeURIComponent(String(version))}` : photo;
+      return version
+        ? `${photo}${hasQ ? "&" : "?"}ts=${encodeURIComponent(String(version))}`
+        : photo;
     }
   }, [photo, version]);
 
-  // โหลดรูปอัตโนมัติ (ต้องใช้ fetch เป็น blob เพื่อส่ง cookies ไปด้วย)
   useEffect(() => {
     let aborted = false;
     const ctrl = new AbortController();
@@ -54,24 +63,39 @@ export default function AvatarButton({
       if (photoWithTs || !fetchUrl) return;
 
       try {
-        const hasQ = fetchUrl.includes("?");
-        const url = `${fetchUrl}${version ? `${hasQ ? "&" : "?"}ts=${encodeURIComponent(String(version))}` : ""}`;
+        const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+        const absUrl = fetchUrl.startsWith("http")
+          ? fetchUrl
+          : `${API_BASE}${fetchUrl.startsWith("/") ? "" : "/"}${fetchUrl}`;
+        const hasQ = absUrl.includes("?");
+        const url = `${absUrl}${
+          version
+            ? `${hasQ ? "&" : "?"}ts=${encodeURIComponent(String(version))}`
+            : ""
+        }`;
 
         const r = await fetch(url, {
           signal: ctrl.signal,
           cache: "no-store",
           credentials: "include",
         });
-        if (!r.ok) { setImgError(true); return; }
+        if (!r.ok) {
+          setImgError(true);
+          return;
+        }
 
         const ct = r.headers.get("content-type") || "";
-        if (!ct.toLowerCase().startsWith("image/")) { setImgError(true); return; }
+        if (!ct.toLowerCase().startsWith("image/")) {
+          setImgError(true);
+          return;
+        }
 
         const b = await r.blob();
         if (aborted) return;
         const blobUrl = URL.createObjectURL(b);
 
-        if (currentBlobUrl.current) urlsToRevoke.current.push(currentBlobUrl.current);
+        if (currentBlobUrl.current)
+          urlsToRevoke.current.push(currentBlobUrl.current);
         currentBlobUrl.current = blobUrl;
         setAutoPhoto(blobUrl);
       } catch {
@@ -90,19 +114,23 @@ export default function AvatarButton({
       }
       while (urlsToRevoke.current.length) {
         const u = urlsToRevoke.current.pop();
-        try { URL.revokeObjectURL(u); } catch {}
+        try {
+          URL.revokeObjectURL(u);
+        } catch {}
       }
     };
   }, [photoWithTs, fetchUrl, version]);
 
-  const resolved = !imgError ? (photoWithTs ?? autoPhoto) : null;
+  const resolved = !imgError ? photoWithTs ?? autoPhoto : null;
   const isBlob = typeof resolved === "string" && resolved.startsWith("blob:");
   const showIconFallback = !resolved && fallback === "icon";
 
   const handleLoaded = useCallback(() => {
     while (urlsToRevoke.current.length) {
       const u = urlsToRevoke.current.pop();
-      try { URL.revokeObjectURL(u); } catch {}
+      try {
+        URL.revokeObjectURL(u);
+      } catch {}
     }
   }, []);
 

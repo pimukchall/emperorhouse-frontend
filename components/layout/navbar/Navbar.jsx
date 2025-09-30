@@ -55,7 +55,7 @@ export default function Navbar() {
               <AvatarButton
                 name={user?.name}
                 email={user?.email}
-                fetchUrl={user?.id ? `/api/files/user/avatar/${user.id}` : undefined}
+                fetchUrl={user?.id ? `/api/files/avatar/${user.id}` : undefined}
               />
             )}
             <ThemeToggle />

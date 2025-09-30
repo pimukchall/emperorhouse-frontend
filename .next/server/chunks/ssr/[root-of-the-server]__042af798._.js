@@ -8,137 +8,127 @@ module.exports = mod;
 "[project]/lib/api.js [app-ssr] (ecmascript)", ((__turbopack_context__) => {
 "use strict";
 
-// lib/api.js
-// ==============================
-// Config
-// ==============================
 __turbopack_context__.s([
+    "API_BASE_URL",
+    ()=>API_BASE_URL,
     "apiFetch",
     ()=>apiFetch,
-    "apiURL",
-    ()=>apiURL,
     "configureApiAuth",
     ()=>configureApiAuth,
-    "isAbsoluteUrl",
-    ()=>isAbsoluteUrl,
-    "parseResponse",
-    ()=>parseResponse
+    "toApiUrl",
+    ()=>toApiUrl
 ]);
-const BASE = (("TURBOPACK compile-time value", "http://localhost:4000") || "http://localhost:4000").trim();
-// ==============================
-// Internal state (registered by AuthProvider)
-// ==============================
-let _getAccessToken = null;
-let _onUnauthorized = null;
-// ใช้กัน “stampede” ตอน refresh token ให้ run ครั้งเดียวแล้ว await ร่วมกัน
-let _refreshPromise = null;
-// ==============================
-// Small utilities
-// ==============================
-function isAbsoluteUrl(u) {
-    return /^https?:\/\//i.test(String(u || ""));
-}
-function trimTrailingSlash(s) {
-    return String(s || "").replace(/\/+$/g, "");
-}
-function trimLeadingSlash(s) {
-    return String(s || "").replace(/^\/+/g, "");
-}
-function apiURL(pathOrUrl = "") {
-    const u = String(pathOrUrl || "");
-    if (!u) return trimTrailingSlash(BASE); // กรณีอยากได้ BASE เปล่า ๆ
-    if (isAbsoluteUrl(u)) return u;
-    const base = trimTrailingSlash(BASE);
-    const path = "/" + trimLeadingSlash(u); // บังคับให้ขึ้นต้นด้วย /
-    return base + path;
-}
-async function parseResponse(res) {
-    const ct = res.headers.get("content-type") || "";
-    const data = ct.includes("application/json") ? await res.json() : await res.text();
-    return data;
-}
-/** ตรวจว่าเป็น URL refresh token (กันวนลูป onUnauthorized) */ function isAuthRefreshUrl(url) {
-    try {
-        const u = new URL(url, BASE);
-        // ตรงกับ backend path: /api/auth/refresh
-        return /\/api\/auth\/refresh($|\?)/i.test(u.pathname);
-    } catch  {
-        return false;
-    }
-}
+let _getAccessToken = null; // () => string | null | Promise<string|null>
+let _onUnauthorized = null; // () => boolean | Promise<boolean>
 function configureApiAuth({ getAccessToken, onUnauthorized } = {}) {
-    _getAccessToken = typeof getAccessToken === "function" ? getAccessToken : null;
-    _onUnauthorized = typeof onUnauthorized === "function" ? onUnauthorized : null;
+    _getAccessToken = getAccessToken || null;
+    _onUnauthorized = onUnauthorized || null;
+}
+const API_BASE_URL = ("TURBOPACK compile-time value", "http://localhost:4000") || "http://localhost:4000";
+function toApiUrl(pathOrUrl, absoluteUrl = false) {
+    if (!pathOrUrl) return "";
+    if (absoluteUrl) return pathOrUrl;
+    if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+    return `${API_BASE_URL}${pathOrUrl.startsWith("/") ? "" : "/"}${pathOrUrl}`;
 }
 async function apiFetch(pathOrUrl, init = {}, opts = {}) {
-    // 1) สร้าง URL
-    const url = isAbsoluteUrl(pathOrUrl) ? String(pathOrUrl) : apiURL(pathOrUrl);
-    // 2) เตรียม header + body
-    const isForm = typeof FormData !== "undefined" && init?.body instanceof FormData;
-    const headers = new Headers(init?.headers || {});
-    if (!isForm && init?.body && typeof init.body === "object" && !headers.has("content-type")) {
-        headers.set("content-type", "application/json");
+    const url = toApiUrl(pathOrUrl, opts.absoluteUrl);
+    // headers
+    const headers = new Headers(init.headers || {});
+    if (!headers.has("Content-Type") && init.body != null && !(init.body instanceof FormData)) {
+        headers.set("Content-Type", "application/json");
     }
-    // 3) เลือก token getter / unauthorized handler (สามารถ override รายคำขอได้)
-    const getAccessToken = typeof opts.getAccessToken === "function" ? opts.getAccessToken : _getAccessToken;
-    const onUnauthorized = typeof opts.onUnauthorized === "function" ? opts.onUnauthorized : _onUnauthorized;
-    // 4) แนบ Bearer ถ้ามี
-    if (typeof getAccessToken === "function") {
-        const token = getAccessToken();
-        if (token && !headers.has("authorization")) {
-            headers.set("authorization", `Bearer ${token}`);
-        }
-    }
-    const requestInit = {
-        method: init?.method || "GET",
+    // request init
+    const reqInit = {
+        method: init.method || "GET",
         credentials: "include",
-        cache: "no-store",
+        mode: "cors",
         ...init,
         headers,
-        body: isForm ? init.body : init?.body && typeof init.body === "object" ? JSON.stringify(init.body) : init?.body
+        body: init.body == null ? undefined : init.body instanceof FormData ? init.body : typeof init.body === "string" ? init.body : JSON.stringify(init.body)
     };
-    // 5) ยิงครั้งที่ 1
-    const allowRefresh = !isAuthRefreshUrl(url);
-    const retryOnce = opts.retryOnce !== false; // default = true
-    let res = await fetch(url, requestInit);
-    // 6) ถ้า 401 และอนุญาต refresh -> เรียก onUnauthorized() แบบรวมศูนย์
-    if (res.status === 401 && allowRefresh && typeof onUnauthorized === "function") {
-        if (!_refreshPromise) {
-            _refreshPromise = (async ()=>{
-                try {
-                    const ok = await onUnauthorized();
-                    return !!ok;
-                } finally{
-                    // ปล่อยให้คำขออื่น ๆ ได้ await ก่อน แล้วค่อยล้างตัวแปร
-                    setTimeout(()=>{
-                        _refreshPromise = null;
-                    }, 0);
-                }
-            })();
-        }
-        const ok = await _refreshPromise;
-        // 7) ถ้า refresh สำเร็จ และอนุญาต retry
-        if (ok && retryOnce) {
-            // แนบ token ล่าสุดก่อนยิงซ้ำ
-            if (typeof getAccessToken === "function") {
-                const t2 = getAccessToken();
-                if (t2) requestInit.headers.set("authorization", `Bearer ${t2}`);
-            }
-            res = await fetch(url, requestInit);
+    // Bearer token (ถ้ามี)
+    if (_getAccessToken && !headers.has("Authorization")) {
+        try {
+            const token = await _getAccessToken();
+            if (token) headers.set("Authorization", `Bearer ${token}`);
+        } catch  {}
+    }
+    logRequest(url, reqInit);
+    // request (รอบแรก)
+    let res = await fetch(url, reqInit);
+    if (res.status !== 401) return parseResponse(res, url, reqInit);
+    // 401 → ลอง refresh + retry
+    if (_onUnauthorized) {
+        const ok = await _onUnauthorized();
+        if (ok && _getAccessToken) {
+            try {
+                const token2 = await _getAccessToken();
+                if (token2) headers.set("Authorization", `Bearer ${token2}`);
+            } catch  {}
+            res = await fetch(url, {
+                ...reqInit,
+                headers
+            });
+            if (res.status !== 401) return parseResponse(res, url, reqInit, true);
         }
     }
-    // 8) parse + throw ถ้าไม่ ok
-    const data = await parseResponse(res);
-    if (!res.ok) {
-        const msg = data && (data.error || data.message) || (typeof data === "string" ? data : "Request failed");
-        const err = new Error(msg);
-        err.status = res.status;
-        err.data = data;
-        throw err;
+    // ยัง 401 → fail
+    const data = await safeRead(res);
+    console.warn("[HINT] 401 Unauthorized\n" + "- ตรวจว่าได้ส่ง cookie (credentials: 'include') หรือยัง\n" + "- ตรวจว่า getAccessToken() คืนค่า token ถูกต้องหรือเปล่า\n" + "- ตรวจค่า NEXT_PUBLIC_API_BASE_URL ชี้ไป origin ถูกต้อง");
+    throw wrapHttpError(res, data);
+}
+/* ------------------ Helpers ------------------ */ function logRequest(url, reqInit) {
+    const safeHeaders = Object.fromEntries(Array.from(reqInit.headers.entries()).map(([k, v])=>[
+            k,
+            /authorization/i.test(k) ? "Bearer ***" : v
+        ]));
+    // console.groupCollapsed(`%c[API] ${reqInit.method} ${url}`, "color:#6cf;font-weight:bold");
+    // console.log("time:", new Date().toISOString());
+    // console.log("headers:", safeHeaders);
+    // console.log("credentials:", reqInit.credentials);
+    if (reqInit.body && !(reqInit.body instanceof FormData)) {
+    // console.log("body:", typeof reqInit.body === "string" ? reqInit.body : "[binary]");
     }
+// console.groupEnd();
+}
+async function parseResponse(res, url, reqInit, isRetry = false) {
+    const text = await res.clone().text();
+    let data = null;
+    try {
+        data = text ? JSON.parse(text) : null;
+    } catch  {
+        data = text || null;
+    }
+    // console.groupCollapsed(
+    //   `%c[API RES] ${reqInit.method} ${url} -> ${res.status}${isRetry ? " (retry)" : ""}`,
+    //   res.ok ? "color:#9f9;font-weight:bold" : "color:#f66;font-weight:bold"
+    // );
+    // console.log("time:", new Date().toISOString());
+    // console.log("status:", res.status, res.statusText);
+    // console.log("response:", data);
+    // console.groupEnd();
+    if (!res.ok) throw wrapHttpError(res, data);
     return data;
 }
-;
+async function safeRead(res) {
+    try {
+        const t = await res.clone().text();
+        try {
+            return t ? JSON.parse(t) : null;
+        } catch  {
+            return t || null;
+        }
+    } catch  {
+        return null;
+    }
+}
+function wrapHttpError(res, data) {
+    const err = new Error(`HTTP ${res.status}`);
+    err.status = res.status;
+    err.data = data;
+    return err;
+}
 }),
 "[project]/access/rules.js [app-ssr] (ecmascript)", ((__turbopack_context__) => {
 "use strict";
@@ -253,6 +243,8 @@ __turbopack_context__.s([
     ()=>AuthProvider,
     "canVisitPure",
     ()=>canVisitPure,
+    "hasRole",
+    ()=>hasRole,
     "hasRolePure",
     ()=>hasRolePure,
     "useAuth",
@@ -416,6 +408,7 @@ function useCanVisit(path) {
     const { user } = useAuth();
     return canVisitPure(path, user);
 }
+const hasRole = hasRolePure;
 }),
 "[project]/app/providers.js [app-ssr] (ecmascript)", ((__turbopack_context__) => {
 "use strict";
@@ -1140,7 +1133,6 @@ function AvatarButton({ href = "/me", name, email, photo, fetchUrl = null, onCli
         photo,
         version
     ]);
-    // โหลดรูปอัตโนมัติ (ต้องใช้ fetch เป็น blob เพื่อส่ง cookies ไปด้วย)
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
         let aborted = false;
         const ctrl = new AbortController();
@@ -1148,8 +1140,10 @@ function AvatarButton({ href = "/me", name, email, photo, fetchUrl = null, onCli
             setImgError(false);
             if (photoWithTs || !fetchUrl) return;
             try {
-                const hasQ = fetchUrl.includes("?");
-                const url = `${fetchUrl}${version ? `${hasQ ? "&" : "?"}ts=${encodeURIComponent(String(version))}` : ""}`;
+                const API_BASE = ("TURBOPACK compile-time value", "http://localhost:4000") || "";
+                const absUrl = fetchUrl.startsWith("http") ? fetchUrl : `${API_BASE}${fetchUrl.startsWith("/") ? "" : "/"}${fetchUrl}`;
+                const hasQ = absUrl.includes("?");
+                const url = `${absUrl}${version ? `${hasQ ? "&" : "?"}ts=${encodeURIComponent(String(version))}` : ""}`;
                 const r = await fetch(url, {
                     signal: ctrl.signal,
                     cache: "no-store",
@@ -1221,7 +1215,7 @@ function AvatarButton({ href = "/me", name, email, photo, fetchUrl = null, onCli
             onError: ()=>setImgError(true)
         }, void 0, false, {
             fileName: "[project]/components/layout/navbar/AvatarButton.jsx",
-            lineNumber: 124,
+            lineNumber: 152,
             columnNumber: 11
         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$image$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
             src: resolved,
@@ -1236,26 +1230,26 @@ function AvatarButton({ href = "/me", name, email, photo, fetchUrl = null, onCli
             onError: ()=>setImgError(true)
         }, void 0, false, {
             fileName: "[project]/components/layout/navbar/AvatarButton.jsx",
-            lineNumber: 134,
+            lineNumber: 162,
             columnNumber: 11
         }, this) : showIconFallback ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$user$2d$round$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__UserRound$3e$__["UserRound"], {
             className: "h-5 w-5 opacity-80",
             "aria-hidden": "true"
         }, void 0, false, {
             fileName: "[project]/components/layout/navbar/AvatarButton.jsx",
-            lineNumber: 148,
+            lineNumber: 176,
             columnNumber: 9
         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
             className: "select-none text-xs font-semibold",
             children: initialsFrom(name, email)
         }, void 0, false, {
             fileName: "[project]/components/layout/navbar/AvatarButton.jsx",
-            lineNumber: 150,
+            lineNumber: 178,
             columnNumber: 9
         }, this)
     }, void 0, false, {
         fileName: "[project]/components/layout/navbar/AvatarButton.jsx",
-        lineNumber: 110,
+        lineNumber: 138,
         columnNumber: 5
     }, this);
 }
@@ -1365,7 +1359,7 @@ function MobileMenu({ open, onClose }) {
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$layout$2f$navbar$2f$AvatarButton$2e$jsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
                                                     name: user?.name,
                                                     email: user?.email,
-                                                    fetchUrl: user?.id ? `/api/files/user/avatar/${user.id}` : undefined,
+                                                    fetchUrl: user?.id ? `/api/files/avatar/${user.id}` : undefined,
                                                     onClick: onClose
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/layout/navbar/MobileMenu.jsx",
@@ -1954,7 +1948,7 @@ function Navbar() {
                                     user && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$layout$2f$navbar$2f$AvatarButton$2e$jsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
                                         name: user?.name,
                                         email: user?.email,
-                                        fetchUrl: user?.id ? `/api/files/user/avatar/${user.id}` : undefined
+                                        fetchUrl: user?.id ? `/api/files/avatar/${user.id}` : undefined
                                     }, void 0, false, {
                                         fileName: "[project]/components/layout/navbar/Navbar.jsx",
                                         lineNumber: 55,

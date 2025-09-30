@@ -119,10 +119,12 @@ export function hasRolePure(user, targets) {
   const list = Array.isArray(targets) ? targets : [targets];
   return list.map((t) => String(t).toLowerCase()).includes(role);
 }
+
 export function useHasRole(targets) {
   const { user } = useAuth();
   return hasRolePure(user, targets);
 }
+
 export function canVisitPure(path, user) {
   if (!user) return false;
   if (isAdmin(user)) return true;
@@ -146,7 +148,11 @@ export function canVisitPure(path, user) {
   }
   return true;
 }
+
 export function useCanVisit(path) {
   const { user } = useAuth();
   return canVisitPure(path, user);
 }
+
+// --- Alias for backward compatibility ---
+export const hasRole = hasRolePure;

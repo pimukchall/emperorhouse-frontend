@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/domains/auth/hooks/useAuth";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, toApiUrl } from "@/lib/api"; // ⬅️ นำเข้า toApiUrl
 import StatefulButton from "@/components/ui/stateful-button";
 import { BackgroundGradient } from "@/components/ui/background-gradient";
 import NoticeDialog from "@/components/modal/NoticeDialog";
@@ -57,13 +57,24 @@ export default function MeClient() {
   const [notice, setNotice] = useState({ open: false, type: "info", message: "" });
   const [showChangePass, setShowChangePass] = useState(false);
 
+  // ✅ ใช้ toApiUrl + cache bust
   const [avatarTick, setAvatarTick] = useState(0);
   const [avatarError, setAvatarError] = useState(false);
-  const avatarUrl = user?.id ? `/api/files/avatar/${user.id}?ts=${avatarTick}` : "";
+  const avatarUrl = useMemo(() => {
+    if (!user?.id) return "";
+    const abs = toApiUrl(`/api/files/avatar/${user.id}`);
+    const sep = abs.includes("?") ? "&" : "?";
+    return `${abs}${sep}ts=${avatarTick}`;
+  }, [user?.id, avatarTick]);
 
   const [signTick, setSignTick] = useState(0);
   const [signError, setSignError] = useState(false);
-  const signatureUrl = user?.id ? `/api/files/signature/${user.id}?ts=${signTick}` : "";
+  const signatureUrl = useMemo(() => {
+    if (!user?.id) return "";
+    const abs = toApiUrl(`/api/files/signature/${user.id}`);
+    const sep = abs.includes("?") ? "&" : "?";
+    return `${abs}${sep}ts=${signTick}`;
+  }, [user?.id, signTick]);
 
   const [showDrawPad, setShowDrawPad] = useState(false);
 
@@ -486,7 +497,7 @@ function SignatureSection({
   );
 }
 
-/** ---------------- Readonly row (เพิ่มให้ครบ) ---------------- */
+/** ---------------- Readonly row ---------------- */
 function ReadonlyRow({ label, value }) {
   return (
     <div className="space-y-1">

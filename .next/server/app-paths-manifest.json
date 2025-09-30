@@ -1,5 +1,6 @@
 {
   "/(protected)/admin/roles/page": "app/(protected)/admin/roles/page.js",
+  "/(protected)/admin/users/page": "app/(protected)/admin/users/page.js",
   "/(protected)/me/page": "app/(protected)/me/page.js",
   "/(public)/auth/login/page": "app/(public)/auth/login/page.js",
   "/_not-found/page": "app/_not-found/page.js",

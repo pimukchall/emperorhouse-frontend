@@ -1,10 +1,1 @@
-{
-  "/(app)/admin/departments/page": "app/(app)/admin/departments/page.js",
-  "/(app)/admin/organizations/page": "app/(app)/admin/organizations/page.js",
-  "/(app)/admin/roles/page": "app/(app)/admin/roles/page.js",
-  "/(app)/admin/users/page": "app/(app)/admin/users/page.js",
-  "/_not-found/page": "app/_not-found/page.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/me/page": "app/me/page.js",
-  "/page": "app/page.js"
-}
+{}

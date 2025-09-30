@@ -1330,6 +1330,10 @@
     min-height: calc(var(--spacing) * 24);
   }
 
+  .min-h-\[40vh\] {
+    min-height: 40vh;
+  }
+
   .min-h-\[100dvh\] {
     min-height: 100dvh;
   }
@@ -2459,10 +2463,6 @@
 
   .\[background-size\:var\(--width\)_var\(--height\)\] {
     background-size: var(--width) var(--height);
-  }
-
-  .bg-\[0_0\,0_8px\,8px_-8px\,-8px_0\] {
-    background-size: 0 0, 0 8px, 8px -8px, -8px 0;
   }
 
   .bg-\[length\:16px_16px\] {

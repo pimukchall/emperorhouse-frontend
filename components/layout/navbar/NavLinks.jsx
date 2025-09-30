@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useRef, useCallback } from "react";
 import { DesktopNavItem } from "./NavItem";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/components/local-auth";
+import { useAuth } from "@/domains/auth/hooks/useAuth";
 import { BASE_LINKS, visibleCategories } from "@/config/routes";
 import { ChevronDown } from "lucide-react";
 

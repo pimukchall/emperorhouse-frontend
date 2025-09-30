@@ -259,8 +259,6 @@ __turbopack_context__.s([
     ()=>AuthProvider,
     "canVisitPure",
     ()=>canVisitPure,
-    "hasRole",
-    ()=>hasRole,
     "hasRolePure",
     ()=>hasRolePure,
     "useAuth",
@@ -275,7 +273,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/api.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$access$2f$rules$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/access/rules.js [app-client] (ecmascript)");
 ;
-var _s = __turbopack_context__.k.signature(), _s1 = __turbopack_context__.k.signature(), _s2 = __turbopack_context__.k.signature(), _s3 = __turbopack_context__.k.signature(), _s4 = __turbopack_context__.k.signature();
+var _s = __turbopack_context__.k.signature(), _s1 = __turbopack_context__.k.signature(), _s2 = __turbopack_context__.k.signature(), _s3 = __turbopack_context__.k.signature();
 "use client";
 ;
 ;
@@ -314,7 +312,6 @@ function AuthProvider(param) {
             }
         }
     }["AuthProvider.useCallback[fetchMe]"], []);
-    // 👉 ลงทะเบียน token getter + handler ให้ apiFetch ใช้ทั่วแอป
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "AuthProvider.useEffect": ()=>{
             (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["configureApiAuth"])({
@@ -343,15 +340,21 @@ function AuthProvider(param) {
     ]);
     const signIn = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
         "AuthProvider.useCallback[signIn]": async (email, password)=>{
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["apiFetch"])("/api/auth/login", {
-                method: "POST",
-                body: {
-                    email,
-                    password
-                }
-            });
-            await fetchMe();
-            return true;
+            try {
+                const data = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["apiFetch"])("/api/auth/login", {
+                    method: "POST",
+                    body: {
+                        email,
+                        password
+                    }
+                });
+                accessTokenRef.current = (data === null || data === void 0 ? void 0 : data.accessToken) || null;
+                await fetchMe();
+                return true;
+            } catch (e) {
+                console.error("Login failed:", e);
+                return false;
+            }
         }
     }["AuthProvider.useCallback[signIn]"], [
         fetchMe
@@ -368,7 +371,6 @@ function AuthProvider(param) {
             return true;
         }
     }["AuthProvider.useCallback[signOut]"], []);
-    // (ยังคง authedFetch ไว้สำหรับบางเคสที่อยาก override เป็นรายคำขอ)
     async function authedFetch(pathOrUrl) {
         let init = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
         const isAbs = /^https?:\/\//i.test(pathOrUrl);
@@ -396,7 +398,7 @@ function AuthProvider(param) {
         children: children
     }, void 0, false, {
         fileName: "[project]/components/local-auth.jsx",
-        lineNumber: 104,
+        lineNumber: 107,
         columnNumber: 10
     }, this);
 }
@@ -409,32 +411,22 @@ function useAuth() {
     return ctx;
 }
 _s1(useAuth, "/dMy7t63NXD4eYACoT93CePwGrg=");
-function hasRolePure(user, roleNameMaybe) {
+function hasRolePure(user, targets) {
     var _user_role;
     const role = ((user === null || user === void 0 ? void 0 : (_user_role = user.role) === null || _user_role === void 0 ? void 0 : _user_role.name) || (user === null || user === void 0 ? void 0 : user.roleName) || "").toLowerCase();
-    const targets = Array.isArray(roleNameMaybe) ? roleNameMaybe : [
-        roleNameMaybe
-    ].filter(Boolean);
-    return targets.map((t)=>String(t).toLowerCase()).includes(role);
+    const list = Array.isArray(targets) ? targets : [
+        targets
+    ];
+    return list.map((t)=>String(t).toLowerCase()).includes(role);
 }
-function useHasRole(roleNameMaybe) {
+function useHasRole(targets) {
     _s2();
     const { user } = useAuth();
-    return hasRolePure(user, roleNameMaybe);
+    return hasRolePure(user, targets);
 }
 _s2(useHasRole, "9ep4vdl3mBfipxjmc+tQCDhw6Ik=", false, function() {
     return [
         useAuth
-    ];
-});
-function hasRole(userOrRoleName, roleNameMaybe) {
-    _s3();
-    if (typeof userOrRoleName === "string") return useHasRole(userOrRoleName);
-    return hasRolePure(userOrRoleName, roleNameMaybe);
-}
-_s3(hasRole, "jeHUSpWuvMoZ10WaPJ/up4tFqRo=", false, function() {
-    return [
-        useHasRole
     ];
 });
 function canVisitPure(path, user) {
@@ -446,13 +438,11 @@ function canVisitPure(path, user) {
     const { require = {} } = rule;
     const codes = (0, __TURBOPACK__imported__module__$5b$project$5d2f$access$2f$rules$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["userDeptCodes"])(user);
     const rank = (0, __TURBOPACK__imported__module__$5b$project$5d2f$access$2f$rules$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["userRank"])(user);
-    if ((_require_deptAny = require.deptAny) === null || _require_deptAny === void 0 ? void 0 : _require_deptAny.length) {
-        const ok = require.deptAny.some((c)=>codes.has(String(c).toUpperCase()));
-        if (!ok) return false;
+    if (((_require_deptAny = require.deptAny) === null || _require_deptAny === void 0 ? void 0 : _require_deptAny.length) && !require.deptAny.some((c)=>codes.has(String(c).toUpperCase()))) {
+        return false;
     }
-    if ((_require_deptAll = require.deptAll) === null || _require_deptAll === void 0 ? void 0 : _require_deptAll.length) {
-        const ok = require.deptAll.every((c)=>codes.has(String(c).toUpperCase()));
-        if (!ok) return false;
+    if (((_require_deptAll = require.deptAll) === null || _require_deptAll === void 0 ? void 0 : _require_deptAll.length) && !require.deptAll.every((c)=>codes.has(String(c).toUpperCase()))) {
+        return false;
     }
     if (require.minRank) {
         const need = __TURBOPACK__imported__module__$5b$project$5d2f$access$2f$rules$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["LEVEL_RANK"][String(require.minRank).toUpperCase()] || 0;
@@ -461,11 +451,11 @@ function canVisitPure(path, user) {
     return true;
 }
 function useCanVisit(path) {
-    _s4();
+    _s3();
     const { user } = useAuth();
     return canVisitPure(path, user);
 }
-_s4(useCanVisit, "9ep4vdl3mBfipxjmc+tQCDhw6Ik=", false, function() {
+_s3(useCanVisit, "9ep4vdl3mBfipxjmc+tQCDhw6Ik=", false, function() {
     return [
         useAuth
     ];

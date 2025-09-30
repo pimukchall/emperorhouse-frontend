@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { HeroSection } from "@/app/domains/home/components/HeroSection";
+import { HeroSection } from "@/domains/home/components/HeroSection";
 // import SoftwareRequestForm from "@/components/forms/SoftwareRequestForm";
-import FeatureHighlights from "@/app/domains/home/components/feature-highlights";
-import HowItWorks from "@/app/domains/home/components/how-it-works";
+import FeatureHighlights from "@/domains/home/components/feature-highlights";
+import HowItWorks from "@/domains/home/components/how-it-works";
 
 export default function Home() {
   const [open, setOpen] = useState(false);

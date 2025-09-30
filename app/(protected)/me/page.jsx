@@ -1,4 +1,4 @@
-import MeClient from "./meClientOld";
+import MeClient from "./meClient";
 
 export const metadata = { title: "โปรไฟล์ของฉัน" };
 

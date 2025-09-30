@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import ErrorDialog from "@/components/modal/ErrorDialog";
 import StatefulButton from "@/components/ui/stateful-button";
-import { useAuth, hasRole } from "@/components/local-auth";
+import { useAuth, hasRole } from "@/domains/auth/hooks/useAuth";
 
 const PAGE_SIZE = 20;
 

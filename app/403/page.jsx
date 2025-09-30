@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { AuroraBackground } from "@/components/ui/aurora-background";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/components/local-auth";
+import { useAuth } from "@/domains/auth/hooks/useAuth";
 
 export default function ForbiddenPage() {
   const router = useRouter();

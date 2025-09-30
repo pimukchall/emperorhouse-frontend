@@ -8,7 +8,7 @@ import AvatarButton from "./AvatarButton";
 import { Button } from "@/components/ui/button";
 import StatefulButton from "@/components/ui/stateful-button";
 import ThemeToggle from "@/components/ui/ThemeToggle";
-import { useAuth } from "@/components/local-auth";
+import { useAuth } from "@/domains/auth/hooks/useAuth";
 import { BASE_LINKS, visibleCategories } from "@/config/routes";
 import { ChevronDown } from "lucide-react";
 import { MobileNavItem } from "./NavItem";
@@ -57,12 +57,12 @@ export function MobileMenu({ open, onClose }) {
                   <AvatarButton
                     name={user?.name}
                     email={user?.email}
-                    fetchUrl={user?.id ? `/profile/files/user/avatar/${user.id}` : undefined}
+                    fetchUrl={user?.id ? `/api/files/user/avatar/${user.id}` : undefined}
                     onClick={onClose}
                   />
                   <div className="min-w-0">
                     <Link
-                      href="/profile"
+                      href="/me"
                       onClick={onClose}
                       className="block truncate text-sm font-medium text-gray-900 hover:underline dark:text-gray-100"
                     >
@@ -88,7 +88,7 @@ export function MobileMenu({ open, onClose }) {
                   onClick={() =>
                     signOut().then(() => {
                       onClose();
-                      router.push("/login");
+                      router.push("/auth/login");
                     })
                   }
                 >
@@ -99,7 +99,7 @@ export function MobileMenu({ open, onClose }) {
                   className="h-9 w-full rounded-full"
                   onClick={() => {
                     onClose();
-                    router.push(`/login?callbackUrl=${encodeURIComponent(pathname || "/")}`);
+                    router.push(`/auth/login?callbackUrl=${encodeURIComponent(pathname || "/")}`);
                   }}
                 >
                   Get Started
@@ -132,7 +132,7 @@ function CategoryGroup({ category, open, onToggle, onItemClick }) {
       >
         <span className="flex items-center gap-3">
           {Icon ? <Icon className="h-5 w-5" /> : null}
-        {category.label}
+          {category.label}
         </span>
         <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>

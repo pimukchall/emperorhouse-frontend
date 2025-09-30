@@ -253,8 +253,6 @@ __turbopack_context__.s([
     ()=>AuthProvider,
     "canVisitPure",
     ()=>canVisitPure,
-    "hasRole",
-    ()=>hasRole,
     "hasRolePure",
     ()=>hasRolePure,
     "useAuth",
@@ -301,7 +299,6 @@ function AuthProvider({ children }) {
             return false;
         }
     }, []);
-    // 👉 ลงทะเบียน token getter + handler ให้ apiFetch ใช้ทั่วแอป
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
         (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["configureApiAuth"])({
             getAccessToken: ()=>accessTokenRef.current,
@@ -321,15 +318,21 @@ function AuthProvider({ children }) {
         refresh
     ]);
     const signIn = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useCallback"])(async (email, password)=>{
-        await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["apiFetch"])("/api/auth/login", {
-            method: "POST",
-            body: {
-                email,
-                password
-            }
-        });
-        await fetchMe();
-        return true;
+        try {
+            const data = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["apiFetch"])("/api/auth/login", {
+                method: "POST",
+                body: {
+                    email,
+                    password
+                }
+            });
+            accessTokenRef.current = data?.accessToken || null;
+            await fetchMe();
+            return true;
+        } catch (e) {
+            console.error("Login failed:", e);
+            return false;
+        }
     }, [
         fetchMe
     ]);
@@ -343,7 +346,6 @@ function AuthProvider({ children }) {
         setUser(null);
         return true;
     }, []);
-    // (ยังคง authedFetch ไว้สำหรับบางเคสที่อยาก override เป็นรายคำขอ)
     async function authedFetch(pathOrUrl, init = {}) {
         const isAbs = /^https?:\/\//i.test(pathOrUrl);
         return (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["apiFetch"])(pathOrUrl, init, {
@@ -370,7 +372,7 @@ function AuthProvider({ children }) {
         children: children
     }, void 0, false, {
         fileName: "[project]/components/local-auth.jsx",
-        lineNumber: 104,
+        lineNumber: 107,
         columnNumber: 10
     }, this);
 }
@@ -379,20 +381,16 @@ function useAuth() {
     if (!ctx) throw new Error("useAuth must be used within <AuthProvider/>");
     return ctx;
 }
-function hasRolePure(user, roleNameMaybe) {
+function hasRolePure(user, targets) {
     const role = (user?.role?.name || user?.roleName || "").toLowerCase();
-    const targets = Array.isArray(roleNameMaybe) ? roleNameMaybe : [
-        roleNameMaybe
-    ].filter(Boolean);
-    return targets.map((t)=>String(t).toLowerCase()).includes(role);
+    const list = Array.isArray(targets) ? targets : [
+        targets
+    ];
+    return list.map((t)=>String(t).toLowerCase()).includes(role);
 }
-function useHasRole(roleNameMaybe) {
+function useHasRole(targets) {
     const { user } = useAuth();
-    return hasRolePure(user, roleNameMaybe);
-}
-function hasRole(userOrRoleName, roleNameMaybe) {
-    if (typeof userOrRoleName === "string") return useHasRole(userOrRoleName);
-    return hasRolePure(userOrRoleName, roleNameMaybe);
+    return hasRolePure(user, targets);
 }
 function canVisitPure(path, user) {
     if (!user) return false;
@@ -402,13 +400,11 @@ function canVisitPure(path, user) {
     const { require = {} } = rule;
     const codes = (0, __TURBOPACK__imported__module__$5b$project$5d2f$access$2f$rules$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["userDeptCodes"])(user);
     const rank = (0, __TURBOPACK__imported__module__$5b$project$5d2f$access$2f$rules$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["userRank"])(user);
-    if (require.deptAny?.length) {
-        const ok = require.deptAny.some((c)=>codes.has(String(c).toUpperCase()));
-        if (!ok) return false;
+    if (require.deptAny?.length && !require.deptAny.some((c)=>codes.has(String(c).toUpperCase()))) {
+        return false;
     }
-    if (require.deptAll?.length) {
-        const ok = require.deptAll.every((c)=>codes.has(String(c).toUpperCase()));
-        if (!ok) return false;
+    if (require.deptAll?.length && !require.deptAll.every((c)=>codes.has(String(c).toUpperCase()))) {
+        return false;
     }
     if (require.minRank) {
         const need = __TURBOPACK__imported__module__$5b$project$5d2f$access$2f$rules$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["LEVEL_RANK"][String(require.minRank).toUpperCase()] || 0;

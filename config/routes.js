@@ -27,7 +27,7 @@ export const CATEGORY_REGISTRY = [
     icon: MessageSquare,
     basePath: "/hr",
     links: [
-      { label: "งานของฉัน",        href: "/evals",                  icon: ClipboardList },
+      { label: "งานของฉัน",        href: "/hr/evals",               icon: ClipboardList },
       { label: "Approvals",         href: "/approvals",              icon: ClipboardList },
       { label: "กำหนดรอบประเมิน",   href: "/hr/cycles",              icon: ClipboardList },
       { label: "ดูรายงานประเมิน",   href: "/hr/reports/evaluations", icon: BarChart3 },
@@ -48,7 +48,7 @@ export const CATEGORY_REGISTRY = [
     ],
   },
 
-  // ---- ตัวอย่างหมวดใหม่: Finance ----
+  // —— ตัวอย่างหมวดใหม่: Finance ——
   {
     id: "finance",
     label: "Finance",

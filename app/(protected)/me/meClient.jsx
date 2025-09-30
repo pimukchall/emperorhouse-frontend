@@ -2,12 +2,12 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/components/local-auth";
+import { useAuth } from "@/domains/auth/hooks/useAuth";
 import { apiFetch } from "@/lib/api";
 import StatefulButton from "@/components/ui/stateful-button";
 import { BackgroundGradient } from "@/components/ui/background-gradient";
 import NoticeDialog from "@/components/modal/NoticeDialog";
-import ChangePasswordDialog from "@/components/auth/ChangePasswordDialog";
+import ChangePasswordDialog from "@/domains/auth/components/ChangePasswordDialog";
 import SignaturePad from "@/components/SignaturePad";
 
 const EMPLOYEE_TYPES = { DAILY: "DAILY (รายวัน)", MONTHLY: "MONTHLY (รายเดือน)" };
@@ -68,7 +68,7 @@ export default function MeClient() {
   const [showDrawPad, setShowDrawPad] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login?callbackUrl=/me");
+    if (!loading && !user) router.replace("/auth/login?callbackUrl=/me");
   }, [loading, user, router]);
 
   useEffect(() => {

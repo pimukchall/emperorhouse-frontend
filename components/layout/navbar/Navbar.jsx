@@ -11,7 +11,7 @@ import { NavLinks } from "./NavLinks";
 import AvatarButton from "./AvatarButton";
 import { MobileMenu } from "./MobileMenu";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/components/local-auth";
+import { useAuth } from "@/domains/auth/hooks/useAuth";
 import { useConfirm } from "@/hooks/useConfirm";
 
 export default function Navbar() {
@@ -31,7 +31,7 @@ export default function Navbar() {
         await signOut();
       },
     });
-    if (ok) router.push("/login");
+    if (ok) router.push("/auth/login");
   }
 
   return (
@@ -73,7 +73,7 @@ export default function Navbar() {
               <Button
                 className="h-9 rounded-full"
                 onClick={() =>
-                  router.push(`/login?callbackUrl=${encodeURIComponent(pathname)}`)
+                  router.push(`/auth/login?callbackUrl=${encodeURIComponent(pathname || "/")}`)
                 }
               >
                 เข้าสู่ระบบ

@@ -1,7 +1,7 @@
 'use client';
 
 import { ThemeProvider } from 'next-themes';
-import { AuthProvider } from '@/components/local-auth';
+import { AuthProvider } from '@/domains/auth/hooks/useAuth';
 
 export default function Providers({ children }) {
   return (

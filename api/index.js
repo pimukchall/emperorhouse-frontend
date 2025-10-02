@@ -1,90 +1,129 @@
-let _getAccessToken = null; 
-let _onUnauthorized = null;
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const REFRESH_PATH = "/api/auth/refresh";
 
-export function configureApiAuth({ getAccessToken, onUnauthorized } = {}) {
+let _getAccessToken = null;      // async () => string|null
+let _onUnauthorized = null;      // async () => boolean
+let _fetch = typeof fetch === "function" ? fetch.bind(globalThis) : null;
+
+export function configureApi({ getAccessToken, onUnauthorized, fetchImpl } = {}) {
   _getAccessToken = getAccessToken || null;
   _onUnauthorized = onUnauthorized || null;
+  if (fetchImpl) _fetch = fetchImpl;
 }
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
-
-export function toApiUrl(pathOrUrl, absoluteUrl = false) {
-  if (!pathOrUrl) return "";
-  if (absoluteUrl) return pathOrUrl;
+export function toApiUrl(pathOrUrl, absolute = false) {
   if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
-  return `${API_BASE_URL}${pathOrUrl.startsWith("/") ? "" : "/"}${pathOrUrl}`;
+  return absolute ? `${API_BASE}${pathOrUrl}` : `${API_BASE}${pathOrUrl}`; // base เดียวกัน
 }
 
+async function parseResponse(res) {
+  const ct = res.headers.get("content-type") || "";
+  if (!ct.includes("application/json")) {
+    const text = await res.text();
+    if (!res.ok) throw makeHttpError(res, text);
+    return text;
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw makeHttpError(res, data);
+  return data;
+}
+
+function makeHttpError(res, body) {
+  const err = new Error((body && body.message) || res.statusText || "HTTP Error");
+  err.status = res.status;
+  err.body = body;
+  return err;
+}
+
+/**
+ * apiFetch(path, init?, opts?)
+ * - แนบ Bearer token อัตโนมัติ
+ * - ถ้า 401 จะเรียก onUnauthorized() เพื่อ refresh แล้ว retry แค่ 1 ครั้ง
+ * - ถ้าเป็น /auth/refresh เอง จะไม่เรียก onUnauthorized เพื่อกัน recursion
+ */
 export async function apiFetch(pathOrUrl, init = {}, opts = {}) {
-  const url = toApiUrl(pathOrUrl, opts.absoluteUrl);
+  if (!_fetch) throw new Error("fetch is not available");
+
+  const url = toApiUrl(pathOrUrl, !!opts.absoluteUrl);
+  const isRefreshCall = url.includes(REFRESH_PATH);
 
   const headers = new Headers(init.headers || {});
-  if (!headers.has("Content-Type") && init.body != null && !(init.body instanceof FormData)) {
+  if (_getAccessToken) {
+    try {
+      const token = await _getAccessToken();
+      if (token && !headers.has("Authorization")) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+    } catch {
+      // ignore
+    }
+  }
+  if (!headers.has("Content-Type") && init.body && !(init.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
 
-  const reqInit = {
+  const req = {
     method: init.method || "GET",
-    credentials: "include",
-    mode: "cors",
+    credentials: init.credentials || "include", // สำคัญสำหรับ refresh-cookie
     ...init,
     headers,
-    body:
-      init.body == null
-        ? undefined
-        : init.body instanceof FormData
-        ? init.body
-        : typeof init.body === "string"
-        ? init.body
-        : JSON.stringify(init.body),
   };
 
-  // Bearer token
-  if (_getAccessToken && !headers.has("Authorization")) {
-    try {
-      const token = await _getAccessToken();
-      if (token) headers.set("Authorization", `Bearer ${token}`);
-    } catch {}
-  }
-
-  let res = await fetch(url, reqInit);
+  let res = await _fetch(url, req);
   if (res.status !== 401) return parseResponse(res);
 
-  // 401 → refresh & retry
+  // ถ้าเป็น /auth/refresh เอง ห้ามพยายาม refresh อีก -> ปล่อย 401 ออกไป
+  if (isRefreshCall) throw makeHttpError(res, await safeRead(res));
+
+  // กันลูป: allow retry แค่ครั้งเดียว
+  if (req._retried) throw makeHttpError(res, await safeRead(res));
+  req._retried = true;
+
   if (_onUnauthorized) {
-    const ok = await _onUnauthorized();
+    const ok = await _onUnauthorized(); // ให้ auth.js จัดคิว refresh
     if (ok && _getAccessToken) {
       try {
-        const token2 = await _getAccessToken();
-        if (token2) headers.set("Authorization", `Bearer ${token2}`);
+        const newToken = await _getAccessToken();
+        if (newToken) headers.set("Authorization", `Bearer ${newToken}`);
       } catch {}
-      res = await fetch(url, { ...reqInit, headers });
+      res = await _fetch(url, req);
       if (res.status !== 401) return parseResponse(res);
     }
   }
 
-  throw await httpError(res);
+  throw makeHttpError(res, await safeRead(res));
 }
 
-async function parseResponse(res) {
-  const text = await res.clone().text();
-  let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch { data = text || null; }
-  if (!res.ok) throw wrap(res, data);
-  return data;
-}
-
-async function httpError(res) {
+async function safeRead(res) {
   try {
-    const t = await res.clone().text();
-    try { return wrap(res, t ? JSON.parse(t) : null); }
-    catch { return wrap(res, t || null); }
-  } catch { return wrap(res, null); }
+    const ct = res.headers.get("content-type") || "";
+    if (ct.includes("application/json")) return await res.json();
+    return await res.text();
+  } catch {
+    return null;
+  }
 }
 
-function wrap(res, data) {
-  const err = new Error(`HTTP ${res.status}`);
-  err.status = res.status;
-  err.data = data;
-  return err;
-}
+// sugar helpers
+export const api = {
+  get: (p, init, opts) => apiFetch(p, { ...(init || {}), method: "GET" }, opts),
+  post: (p, body, init, opts) =>
+    apiFetch(
+      p,
+      { ...(init || {}), method: "POST", body: body instanceof FormData ? body : JSON.stringify(body || {}) },
+      opts
+    ),
+  put: (p, body, init, opts) =>
+    apiFetch(
+      p,
+      { ...(init || {}), method: "PUT", body: body instanceof FormData ? body : JSON.stringify(body || {}) },
+      opts
+    ),
+  patch: (p, body, init, opts) =>
+    apiFetch(
+      p,
+      { ...(init || {}), method: "PATCH", body: body instanceof FormData ? body : JSON.stringify(body || {}) },
+      opts
+    ),
+  delete: (p, init, opts) => apiFetch(p, { ...(init || {}), method: "DELETE" }, opts),
+};

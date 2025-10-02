@@ -9,97 +9,124 @@ module.exports = mod;
 "use strict";
 
 __turbopack_context__.s([
-    "API_BASE_URL",
-    ()=>API_BASE_URL,
+    "api",
+    ()=>api,
     "apiFetch",
     ()=>apiFetch,
-    "configureApiAuth",
-    ()=>configureApiAuth,
+    "configureApi",
+    ()=>configureApi,
     "toApiUrl",
     ()=>toApiUrl
 ]);
-let _getAccessToken = null;
-let _onUnauthorized = null;
-function configureApiAuth({ getAccessToken, onUnauthorized } = {}) {
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const REFRESH_PATH = "/api/auth/refresh";
+let _getAccessToken = null; // async () => string|null
+let _onUnauthorized = null; // async () => boolean
+let _fetch = typeof fetch === "function" ? fetch.bind(globalThis) : null;
+function configureApi({ getAccessToken, onUnauthorized, fetchImpl } = {}) {
     _getAccessToken = getAccessToken || null;
     _onUnauthorized = onUnauthorized || null;
+    if (fetchImpl) _fetch = fetchImpl;
 }
-const API_BASE_URL = ("TURBOPACK compile-time value", "http://localhost:4000") || "http://localhost:4000";
-function toApiUrl(pathOrUrl, absoluteUrl = false) {
-    if (!pathOrUrl) return "";
-    if (absoluteUrl) return pathOrUrl;
+function toApiUrl(pathOrUrl, absolute = false) {
     if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
-    return `${API_BASE_URL}${pathOrUrl.startsWith("/") ? "" : "/"}${pathOrUrl}`;
+    return absolute ? `${API_BASE}${pathOrUrl}` : `${API_BASE}${pathOrUrl}`; // base เดียวกัน
+}
+async function parseResponse(res) {
+    const ct = res.headers.get("content-type") || "";
+    if (!ct.includes("application/json")) {
+        const text = await res.text();
+        if (!res.ok) throw makeHttpError(res, text);
+        return text;
+    }
+    const data = await res.json().catch(()=>({}));
+    if (!res.ok) throw makeHttpError(res, data);
+    return data;
+}
+function makeHttpError(res, body) {
+    const err = new Error(body && body.message || res.statusText || "HTTP Error");
+    err.status = res.status;
+    err.body = body;
+    return err;
 }
 async function apiFetch(pathOrUrl, init = {}, opts = {}) {
-    const url = toApiUrl(pathOrUrl, opts.absoluteUrl);
+    if (!_fetch) throw new Error("fetch is not available");
+    const url = toApiUrl(pathOrUrl, !!opts.absoluteUrl);
+    const isRefreshCall = url.includes(REFRESH_PATH);
     const headers = new Headers(init.headers || {});
-    if (!headers.has("Content-Type") && init.body != null && !(init.body instanceof FormData)) {
-        headers.set("Content-Type", "application/json");
-    }
-    const reqInit = {
-        method: init.method || "GET",
-        credentials: "include",
-        mode: "cors",
-        ...init,
-        headers,
-        body: init.body == null ? undefined : init.body instanceof FormData ? init.body : typeof init.body === "string" ? init.body : JSON.stringify(init.body)
-    };
-    // Bearer token
-    if (_getAccessToken && !headers.has("Authorization")) {
+    if (_getAccessToken) {
         try {
             const token = await _getAccessToken();
-            if (token) headers.set("Authorization", `Bearer ${token}`);
-        } catch  {}
+            if (token && !headers.has("Authorization")) {
+                headers.set("Authorization", `Bearer ${token}`);
+            }
+        } catch  {
+        // ignore
+        }
     }
-    let res = await fetch(url, reqInit);
+    if (!headers.has("Content-Type") && init.body && !(init.body instanceof FormData)) {
+        headers.set("Content-Type", "application/json");
+    }
+    const req = {
+        method: init.method || "GET",
+        credentials: init.credentials || "include",
+        ...init,
+        headers
+    };
+    let res = await _fetch(url, req);
     if (res.status !== 401) return parseResponse(res);
-    // 401 → refresh & retry
+    // ถ้าเป็น /auth/refresh เอง ห้ามพยายาม refresh อีก -> ปล่อย 401 ออกไป
+    if (isRefreshCall) throw makeHttpError(res, await safeRead(res));
+    // กันลูป: allow retry แค่ครั้งเดียว
+    if (req._retried) throw makeHttpError(res, await safeRead(res));
+    req._retried = true;
     if (_onUnauthorized) {
-        const ok = await _onUnauthorized();
+        const ok = await _onUnauthorized(); // ให้ auth.js จัดคิว refresh
         if (ok && _getAccessToken) {
             try {
-                const token2 = await _getAccessToken();
-                if (token2) headers.set("Authorization", `Bearer ${token2}`);
+                const newToken = await _getAccessToken();
+                if (newToken) headers.set("Authorization", `Bearer ${newToken}`);
             } catch  {}
-            res = await fetch(url, {
-                ...reqInit,
-                headers
-            });
+            res = await _fetch(url, req);
             if (res.status !== 401) return parseResponse(res);
         }
     }
-    throw await httpError(res);
+    throw makeHttpError(res, await safeRead(res));
 }
-async function parseResponse(res) {
-    const text = await res.clone().text();
-    let data = null;
+async function safeRead(res) {
     try {
-        data = text ? JSON.parse(text) : null;
+        const ct = res.headers.get("content-type") || "";
+        if (ct.includes("application/json")) return await res.json();
+        return await res.text();
     } catch  {
-        data = text || null;
-    }
-    if (!res.ok) throw wrap(res, data);
-    return data;
-}
-async function httpError(res) {
-    try {
-        const t = await res.clone().text();
-        try {
-            return wrap(res, t ? JSON.parse(t) : null);
-        } catch  {
-            return wrap(res, t || null);
-        }
-    } catch  {
-        return wrap(res, null);
+        return null;
     }
 }
-function wrap(res, data) {
-    const err = new Error(`HTTP ${res.status}`);
-    err.status = res.status;
-    err.data = data;
-    return err;
-}
+const api = {
+    get: (p, init, opts)=>apiFetch(p, {
+            ...init || {},
+            method: "GET"
+        }, opts),
+    post: (p, body, init, opts)=>apiFetch(p, {
+            ...init || {},
+            method: "POST",
+            body: body instanceof FormData ? body : JSON.stringify(body || {})
+        }, opts),
+    put: (p, body, init, opts)=>apiFetch(p, {
+            ...init || {},
+            method: "PUT",
+            body: body instanceof FormData ? body : JSON.stringify(body || {})
+        }, opts),
+    patch: (p, body, init, opts)=>apiFetch(p, {
+            ...init || {},
+            method: "PATCH",
+            body: body instanceof FormData ? body : JSON.stringify(body || {})
+        }, opts),
+    delete: (p, init, opts)=>apiFetch(p, {
+            ...init || {},
+            method: "DELETE"
+        }, opts)
+};
 }),
 "[project]/access/rules.js [app-ssr] (ecmascript)", ((__turbopack_context__) => {
 "use strict";
@@ -225,23 +252,39 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$access$2f$rules$2e$js__$5b$a
 ;
 ;
 const AuthCtx = /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["createContext"])(null);
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const REFRESH_URL = `${API_BASE}/api/auth/refresh`;
 function AuthProvider({ children }) {
     const [user, setUser] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
     const [isReady, setReady] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     const accessTokenRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])(null);
-    const refresh = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useCallback"])(async ()=>{
-        try {
-            const data = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["apiFetch"])("/api/auth/refresh", {
-                method: "POST"
-            });
-            accessTokenRef.current = data?.accessToken || null;
-            setUser(data?.user || null);
-            return true;
-        } catch  {
-            accessTokenRef.current = null;
-            setUser(null);
-            return false;
-        }
+    const refreshRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])(null);
+    const refreshDirect = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useCallback"])(async ()=>{
+        if (refreshRef.current) return refreshRef.current;
+        refreshRef.current = (async ()=>{
+            try {
+                const res = await fetch(REFRESH_URL, {
+                    method: "POST",
+                    credentials: "include"
+                });
+                if (!res.ok) {
+                    accessTokenRef.current = null;
+                    setUser(null);
+                    return false;
+                }
+                const data = await res.json().catch(()=>({}));
+                accessTokenRef.current = data?.accessToken || null;
+                if (data?.user) setUser(data.user);
+                return !!accessTokenRef.current;
+            } catch  {
+                accessTokenRef.current = null;
+                setUser(null);
+                return false;
+            } finally{
+                refreshRef.current = null;
+            }
+        })();
+        return refreshRef.current;
     }, []);
     const fetchMe = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useCallback"])(async ()=>{
         try {
@@ -253,22 +296,22 @@ function AuthProvider({ children }) {
         }
     }, []);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
-        (0, __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["configureApiAuth"])({
+        (0, __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["configureApi"])({
             getAccessToken: ()=>accessTokenRef.current,
-            onUnauthorized: refresh
+            onUnauthorized: refreshDirect
         });
     }, [
-        refresh
+        refreshDirect
     ]);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
         (async ()=>{
             const ok = await fetchMe();
-            if (!ok) await refresh();
+            if (!ok) await refreshDirect();
             setReady(true);
         })();
     }, [
         fetchMe,
-        refresh
+        refreshDirect
     ]);
     const signIn = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useCallback"])(async (email, password)=>{
         try {
@@ -322,7 +365,7 @@ function AuthProvider({ children }) {
             accessToken: accessTokenRef.current,
             signIn,
             signOut,
-            refresh,
+            refresh: refreshDirect,
             authedFetch: (url, init = {})=>(0, __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["apiFetch"])(url, init, {
                     absoluteUrl: /^https?:\/\//i.test(url)
                 }),
@@ -332,14 +375,14 @@ function AuthProvider({ children }) {
         user,
         signIn,
         signOut,
-        refresh
+        refreshDirect
     ]);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(AuthCtx.Provider, {
         value: value,
         children: children
     }, void 0, false, {
         fileName: "[project]/providers/AuthProvider.jsx",
-        lineNumber: 99,
+        lineNumber: 132,
         columnNumber: 10
     }, this);
 }

@@ -3,101 +3,128 @@
 "use strict";
 
 __turbopack_context__.s([
-    "API_BASE_URL",
-    ()=>API_BASE_URL,
+    "api",
+    ()=>api,
     "apiFetch",
     ()=>apiFetch,
-    "configureApiAuth",
-    ()=>configureApiAuth,
+    "configureApi",
+    ()=>configureApi,
     "toApiUrl",
     ()=>toApiUrl
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = /*#__PURE__*/ __turbopack_context__.i("[project]/node_modules/next/dist/build/polyfills/process.js [app-client] (ecmascript)");
-let _getAccessToken = null;
-let _onUnauthorized = null;
-function configureApiAuth() {
-    let { getAccessToken, onUnauthorized } = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
+const API_BASE = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const REFRESH_PATH = "/api/auth/refresh";
+let _getAccessToken = null; // async () => string|null
+let _onUnauthorized = null; // async () => boolean
+let _fetch = typeof fetch === "function" ? fetch.bind(globalThis) : null;
+function configureApi() {
+    let { getAccessToken, onUnauthorized, fetchImpl } = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
     _getAccessToken = getAccessToken || null;
     _onUnauthorized = onUnauthorized || null;
+    if (fetchImpl) _fetch = fetchImpl;
 }
-const API_BASE_URL = ("TURBOPACK compile-time value", "http://localhost:4000") || "http://localhost:4000";
 function toApiUrl(pathOrUrl) {
-    let absoluteUrl = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : false;
-    if (!pathOrUrl) return "";
-    if (absoluteUrl) return pathOrUrl;
+    let absolute = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : false;
     if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
-    return "".concat(API_BASE_URL).concat(pathOrUrl.startsWith("/") ? "" : "/").concat(pathOrUrl);
+    return absolute ? "".concat(API_BASE).concat(pathOrUrl) : "".concat(API_BASE).concat(pathOrUrl); // base เดียวกัน
+}
+async function parseResponse(res) {
+    const ct = res.headers.get("content-type") || "";
+    if (!ct.includes("application/json")) {
+        const text = await res.text();
+        if (!res.ok) throw makeHttpError(res, text);
+        return text;
+    }
+    const data = await res.json().catch(()=>({}));
+    if (!res.ok) throw makeHttpError(res, data);
+    return data;
+}
+function makeHttpError(res, body) {
+    const err = new Error(body && body.message || res.statusText || "HTTP Error");
+    err.status = res.status;
+    err.body = body;
+    return err;
 }
 async function apiFetch(pathOrUrl) {
     let init = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {}, opts = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : {};
-    const url = toApiUrl(pathOrUrl, opts.absoluteUrl);
+    if (!_fetch) throw new Error("fetch is not available");
+    const url = toApiUrl(pathOrUrl, !!opts.absoluteUrl);
+    const isRefreshCall = url.includes(REFRESH_PATH);
     const headers = new Headers(init.headers || {});
-    if (!headers.has("Content-Type") && init.body != null && !(init.body instanceof FormData)) {
-        headers.set("Content-Type", "application/json");
-    }
-    const reqInit = {
-        method: init.method || "GET",
-        credentials: "include",
-        mode: "cors",
-        ...init,
-        headers,
-        body: init.body == null ? undefined : init.body instanceof FormData ? init.body : typeof init.body === "string" ? init.body : JSON.stringify(init.body)
-    };
-    // Bearer token
-    if (_getAccessToken && !headers.has("Authorization")) {
+    if (_getAccessToken) {
         try {
             const token = await _getAccessToken();
-            if (token) headers.set("Authorization", "Bearer ".concat(token));
-        } catch (e) {}
+            if (token && !headers.has("Authorization")) {
+                headers.set("Authorization", "Bearer ".concat(token));
+            }
+        } catch (e) {
+        // ignore
+        }
     }
-    let res = await fetch(url, reqInit);
+    if (!headers.has("Content-Type") && init.body && !(init.body instanceof FormData)) {
+        headers.set("Content-Type", "application/json");
+    }
+    const req = {
+        method: init.method || "GET",
+        credentials: init.credentials || "include",
+        ...init,
+        headers
+    };
+    let res = await _fetch(url, req);
     if (res.status !== 401) return parseResponse(res);
-    // 401 → refresh & retry
+    // ถ้าเป็น /auth/refresh เอง ห้ามพยายาม refresh อีก -> ปล่อย 401 ออกไป
+    if (isRefreshCall) throw makeHttpError(res, await safeRead(res));
+    // กันลูป: allow retry แค่ครั้งเดียว
+    if (req._retried) throw makeHttpError(res, await safeRead(res));
+    req._retried = true;
     if (_onUnauthorized) {
-        const ok = await _onUnauthorized();
+        const ok = await _onUnauthorized(); // ให้ auth.js จัดคิว refresh
         if (ok && _getAccessToken) {
             try {
-                const token2 = await _getAccessToken();
-                if (token2) headers.set("Authorization", "Bearer ".concat(token2));
+                const newToken = await _getAccessToken();
+                if (newToken) headers.set("Authorization", "Bearer ".concat(newToken));
             } catch (e) {}
-            res = await fetch(url, {
-                ...reqInit,
-                headers
-            });
+            res = await _fetch(url, req);
             if (res.status !== 401) return parseResponse(res);
         }
     }
-    throw await httpError(res);
+    throw makeHttpError(res, await safeRead(res));
 }
-async function parseResponse(res) {
-    const text = await res.clone().text();
-    let data = null;
+async function safeRead(res) {
     try {
-        data = text ? JSON.parse(text) : null;
+        const ct = res.headers.get("content-type") || "";
+        if (ct.includes("application/json")) return await res.json();
+        return await res.text();
     } catch (e) {
-        data = text || null;
-    }
-    if (!res.ok) throw wrap(res, data);
-    return data;
-}
-async function httpError(res) {
-    try {
-        const t = await res.clone().text();
-        try {
-            return wrap(res, t ? JSON.parse(t) : null);
-        } catch (e) {
-            return wrap(res, t || null);
-        }
-    } catch (e) {
-        return wrap(res, null);
+        return null;
     }
 }
-function wrap(res, data) {
-    const err = new Error("HTTP ".concat(res.status));
-    err.status = res.status;
-    err.data = data;
-    return err;
-}
+const api = {
+    get: (p, init, opts)=>apiFetch(p, {
+            ...init || {},
+            method: "GET"
+        }, opts),
+    post: (p, body, init, opts)=>apiFetch(p, {
+            ...init || {},
+            method: "POST",
+            body: body instanceof FormData ? body : JSON.stringify(body || {})
+        }, opts),
+    put: (p, body, init, opts)=>apiFetch(p, {
+            ...init || {},
+            method: "PUT",
+            body: body instanceof FormData ? body : JSON.stringify(body || {})
+        }, opts),
+    patch: (p, body, init, opts)=>apiFetch(p, {
+            ...init || {},
+            method: "PATCH",
+            body: body instanceof FormData ? body : JSON.stringify(body || {})
+        }, opts),
+    delete: (p, init, opts)=>apiFetch(p, {
+            ...init || {},
+            method: "DELETE"
+        }, opts)
+};
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
     __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
 }
@@ -221,6 +248,7 @@ __turbopack_context__.s([
     "AuthProvider",
     ()=>AuthProvider
 ]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = /*#__PURE__*/ __turbopack_context__.i("[project]/node_modules/next/dist/build/polyfills/process.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/api/index.js [app-client] (ecmascript)");
@@ -232,28 +260,48 @@ var _s = __turbopack_context__.k.signature();
 ;
 ;
 const AuthCtx = /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["createContext"])(null);
+const API_BASE = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const REFRESH_URL = "".concat(API_BASE, "/api/auth/refresh");
 function AuthProvider(param) {
     let { children } = param;
     _s();
     const [user, setUser] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const [isReady, setReady] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const accessTokenRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
-    const refresh = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
-        "AuthProvider.useCallback[refresh]": async ()=>{
-            try {
-                const data = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["apiFetch"])("/api/auth/refresh", {
-                    method: "POST"
-                });
-                accessTokenRef.current = (data === null || data === void 0 ? void 0 : data.accessToken) || null;
-                setUser((data === null || data === void 0 ? void 0 : data.user) || null);
-                return true;
-            } catch (e) {
-                accessTokenRef.current = null;
-                setUser(null);
-                return false;
-            }
+    const refreshRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
+    const refreshDirect = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
+        "AuthProvider.useCallback[refreshDirect]": async ()=>{
+            if (refreshRef.current) return refreshRef.current;
+            refreshRef.current = ({
+                "AuthProvider.useCallback[refreshDirect]": async ()=>{
+                    try {
+                        const res = await fetch(REFRESH_URL, {
+                            method: "POST",
+                            credentials: "include"
+                        });
+                        if (!res.ok) {
+                            accessTokenRef.current = null;
+                            setUser(null);
+                            return false;
+                        }
+                        const data = await res.json().catch({
+                            "AuthProvider.useCallback[refreshDirect]": ()=>({})
+                        }["AuthProvider.useCallback[refreshDirect]"]);
+                        accessTokenRef.current = (data === null || data === void 0 ? void 0 : data.accessToken) || null;
+                        if (data === null || data === void 0 ? void 0 : data.user) setUser(data.user);
+                        return !!accessTokenRef.current;
+                    } catch (e) {
+                        accessTokenRef.current = null;
+                        setUser(null);
+                        return false;
+                    } finally{
+                        refreshRef.current = null;
+                    }
+                }
+            })["AuthProvider.useCallback[refreshDirect]"]();
+            return refreshRef.current;
         }
-    }["AuthProvider.useCallback[refresh]"], []);
+    }["AuthProvider.useCallback[refreshDirect]"], []);
     const fetchMe = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
         "AuthProvider.useCallback[fetchMe]": async ()=>{
             try {
@@ -267,29 +315,29 @@ function AuthProvider(param) {
     }["AuthProvider.useCallback[fetchMe]"], []);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "AuthProvider.useEffect": ()=>{
-            (0, __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["configureApiAuth"])({
+            (0, __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["configureApi"])({
                 getAccessToken: {
                     "AuthProvider.useEffect": ()=>accessTokenRef.current
                 }["AuthProvider.useEffect"],
-                onUnauthorized: refresh
+                onUnauthorized: refreshDirect
             });
         }
     }["AuthProvider.useEffect"], [
-        refresh
+        refreshDirect
     ]);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "AuthProvider.useEffect": ()=>{
             ({
                 "AuthProvider.useEffect": async ()=>{
                     const ok = await fetchMe();
-                    if (!ok) await refresh();
+                    if (!ok) await refreshDirect();
                     setReady(true);
                 }
             })["AuthProvider.useEffect"]();
         }
     }["AuthProvider.useEffect"], [
         fetchMe,
-        refresh
+        refreshDirect
     ]);
     const signIn = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
         "AuthProvider.useCallback[signIn]": async (email, password)=>{
@@ -349,7 +397,7 @@ function AuthProvider(param) {
                 accessToken: accessTokenRef.current,
                 signIn,
                 signOut,
-                refresh,
+                refresh: refreshDirect,
                 authedFetch: ({
                     "AuthProvider.useMemo[value]": function(url) {
                         let init = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
@@ -365,18 +413,18 @@ function AuthProvider(param) {
         user,
         signIn,
         signOut,
-        refresh
+        refreshDirect
     ]);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(AuthCtx.Provider, {
         value: value,
         children: children
     }, void 0, false, {
         fileName: "[project]/providers/AuthProvider.jsx",
-        lineNumber: 99,
+        lineNumber: 132,
         columnNumber: 10
     }, this);
 }
-_s(AuthProvider, "zoXmMcQf7XuMVKAe1s5WLvL+ZJw=");
+_s(AuthProvider, "PiS3dqQz/y98A8C42yLlgLV5pBk=");
 _c = AuthProvider;
 var _c;
 __turbopack_context__.k.register(_c, "AuthProvider");

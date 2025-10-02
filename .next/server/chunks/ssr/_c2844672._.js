@@ -7,35 +7,104 @@ __turbopack_context__.s([
     ()=>changePassword,
     "forgotPassword",
     ()=>forgotPassword,
+    "getAccessToken",
+    ()=>getAccessToken,
+    "login",
+    ()=>login,
+    "logout",
+    ()=>logout,
+    "me",
+    ()=>me,
     "resetPassword",
-    ()=>resetPassword
+    ()=>resetPassword,
+    "setAccessToken",
+    ()=>setAccessToken
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/api/index.js [app-ssr] (ecmascript)");
 ;
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const REFRESH_URL = `${API_BASE}/api/auth/refresh`;
+const LOGIN_URL = `${API_BASE}/api/auth/login`;
+const LOGOUT_URL = `${API_BASE}/api/auth/logout`;
+let _accessToken = null;
+let _refreshing = null; // Promise<boolean>
+/* ---------- Token store (in-memory + localStorage) ---------- */ const KEY = "accessToken";
+function setAccessToken(token) {
+    _accessToken = token || null;
+    try {
+        if (token) localStorage.setItem(KEY, token);
+        else localStorage.removeItem(KEY);
+    } catch  {}
+}
+async function getAccessToken() {
+    if (_accessToken) return _accessToken;
+    try {
+        const t = localStorage.getItem(KEY);
+        if (t) _accessToken = t;
+    } catch  {}
+    return _accessToken;
+}
+/* ---------- Configure api wrapper ---------- */ (0, __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["configureApi"])({
+    getAccessToken,
+    onUnauthorized: tryRefreshOnce
+});
+/* ---------- Refresh queue ---------- */ async function tryRefreshOnce() {
+    if (_refreshing) return _refreshing;
+    _refreshing = (async ()=>{
+        try {
+            const res = await fetch(REFRESH_URL, {
+                method: "POST",
+                credentials: "include"
+            });
+            if (!res.ok) {
+                setAccessToken(null);
+                return false;
+            }
+            const data = await res.json().catch(()=>({}));
+            const t = data?.accessToken || null;
+            setAccessToken(t);
+            return !!t;
+        } catch  {
+            setAccessToken(null);
+            return false;
+        } finally{
+            _refreshing = null;
+        }
+    })();
+    return _refreshing;
+}
+async function login(payload) {
+    const data = await fetch(LOGIN_URL, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify(payload || {})
+    }).then((r)=>r.json());
+    if (data?.accessToken) setAccessToken(data.accessToken);
+    return data;
+}
+async function logout() {
+    try {
+        await fetch(LOGOUT_URL, {
+            method: "POST",
+            credentials: "include"
+        });
+    } catch  {}
+    setAccessToken(null);
+}
+const me = ()=>__TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["api"].get("/api/auth/me");
+const changePassword = (body)=>__TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["api"].post("/api/auth/change-password", body);
 async function forgotPassword(email) {
-    return (0, __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["apiFetch"])("/api/auth/forgot-password", {
-        method: "POST",
-        body: {
-            email
-        }
+    return __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["api"].post("/api/auth/forgot", {
+        email
     });
 }
-async function resetPassword({ code, newPassword }) {
-    return (0, __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["apiFetch"])("/api/auth/reset-password", {
-        method: "POST",
-        body: {
-            code,
-            newPassword
-        }
-    });
-}
-async function changePassword({ currentPassword, newPassword }) {
-    return (0, __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["apiFetch"])("/api/auth/change-password", {
-        method: "POST",
-        body: {
-            currentPassword,
-            newPassword
-        }
+async function resetPassword(token, newPassword) {
+    return __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["api"].post("/api/auth/reset", {
+        token,
+        password: newPassword
     });
 }
 }),

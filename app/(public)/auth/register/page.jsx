@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import RegisterDialog from "@/domains/auth/components/RegisterDialog";
+import RegisterDialog from "@/components/auth/dialogs/RegisterDialog";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -9,7 +9,9 @@ export default function RegisterPage() {
     <div className="min-h-[40vh]">
       <RegisterDialog
         open={true}
-        onClose={() => router.replace("/auth/login")}
+        onOpenChange={(v) => {
+          if (!v) router.replace("/auth/login");
+        }}
       />
     </div>
   );

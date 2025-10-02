@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/api";
 
 function Dialog({ open, onClose, title, children, footer }) {
   if (!open) return null;

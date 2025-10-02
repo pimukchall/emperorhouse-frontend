@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/api";
 
 export default function MDApprovalsPage() {
   const [list, setList] = useState([]);

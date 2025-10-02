@@ -11,7 +11,7 @@ import { NavLinks } from "./NavLinks";
 import AvatarButton from "./AvatarButton";
 import { MobileMenu } from "./MobileMenu";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/domains/auth/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useConfirm } from "@/hooks/useConfirm";
 
 export default function Navbar() {

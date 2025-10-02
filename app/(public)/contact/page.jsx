@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { apiFetch } from "@/lib/api"; // ← ใช้ lib/api แทนอ่าน env เอง
+import { apiFetch } from "@/api"; // ← ใช้ lib/api แทนอ่าน env เอง
 
 // กันสแปมแบบเบา ๆ
 const MIN_FILL_SECONDS = 5;

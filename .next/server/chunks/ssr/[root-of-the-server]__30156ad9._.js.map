@@ -3,5 +3,5 @@
   "sources": [],
   "sections": [
     {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
-    {"offset": {"line": 19, "column": 0}, "map": {"version":3,"sources":["file:///D:/Workspace/emperorhouse-frontend/app/%28protected%29/me/page.jsx"],"sourcesContent":["import MeClient from \"./meClientOld\";\r\n\r\nexport const metadata = { title: \"โปรไฟล์ของฉัน\" };\r\n\r\nexport default function Page() {\r\n  return <MeClient />;\r\n}"],"names":[],"mappings":";;;;;;;;;;;;;;AAEO,MAAM,WAAW;IAAE,OAAO;AAAgB;AAElC,SAAS;IACtB,qBAAO,8OAAC;;;;;AACV","debugId":null}}]
+    {"offset": {"line": 19, "column": 0}, "map": {"version":3,"sources":["file:///D:/Workspace/emperorhouse-frontend/app/%28protected%29/me/page.jsx"],"sourcesContent":["import MeClient from \"../../../components/account/meClient\";\r\n\r\nexport const metadata = { title: \"โปรไฟล์ของฉัน\" };\r\n\r\nexport default function Page() {\r\n  return <MeClient />;\r\n}"],"names":[],"mappings":";;;;;;;;;;;;;;AAEO,MAAM,WAAW;IAAE,OAAO;AAAgB;AAElC,SAAS;IACtB,qBAAO,8OAAC;;;;;AACV","debugId":null}}]
 }

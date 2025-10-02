@@ -537,13 +537,13 @@ __turbopack_context__.s([
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/navigation.js [app-client] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$domains$2f$auth$2f$hooks$2f$useAuth$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/domains/auth/hooks/useAuth.jsx [app-client] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/api.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$hooks$2f$useAuth$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/hooks/useAuth.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/api/index.js [app-client] (ecmascript)"); // ⬅️ นำเข้า toApiUrl
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$stateful$2d$button$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/ui/stateful-button.jsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$background$2d$gradient$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/ui/background-gradient.jsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$components$2f$modal$2f$NoticeDialog$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/components/modal/NoticeDialog.jsx [app-client] (ecmascript)");
 (()=>{
-    const e = new Error("Cannot find module '@/components/auth/ChangePasswordDialog'");
+    const e = new Error("Cannot find module '@/domains/auth/auth/ChangePasswordDialog'");
     e.code = 'MODULE_NOT_FOUND';
     throw e;
 })();
@@ -588,7 +588,7 @@ function MeClient() {
     var _readonly_otherDepts;
     _s();
     const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"])();
-    const { user, loading, reload } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$domains$2f$auth$2f$hooks$2f$useAuth$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"])();
+    const { user, loading, reload } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$hooks$2f$useAuth$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"])();
     const [form, setForm] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])({
         email: "",
         name: "",
@@ -618,16 +618,37 @@ function MeClient() {
         message: ""
     });
     const [showChangePass, setShowChangePass] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
+    // ✅ ใช้ toApiUrl + cache bust
     const [avatarTick, setAvatarTick] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(0);
     const [avatarError, setAvatarError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
-    const avatarUrl = (user === null || user === void 0 ? void 0 : user.id) ? "/api/files/avatar/".concat(user.id, "?ts=").concat(avatarTick) : "";
+    const avatarUrl = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useMemo"])({
+        "MeClient.useMemo[avatarUrl]": ()=>{
+            if (!(user === null || user === void 0 ? void 0 : user.id)) return "";
+            const abs = (0, __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["toApiUrl"])("/api/files/avatar/".concat(user.id));
+            const sep = abs.includes("?") ? "&" : "?";
+            return "".concat(abs).concat(sep, "ts=").concat(avatarTick);
+        }
+    }["MeClient.useMemo[avatarUrl]"], [
+        user === null || user === void 0 ? void 0 : user.id,
+        avatarTick
+    ]);
     const [signTick, setSignTick] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(0);
     const [signError, setSignError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
-    const signatureUrl = (user === null || user === void 0 ? void 0 : user.id) ? "/api/files/signature/".concat(user.id, "?ts=").concat(signTick) : "";
+    const signatureUrl = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useMemo"])({
+        "MeClient.useMemo[signatureUrl]": ()=>{
+            if (!(user === null || user === void 0 ? void 0 : user.id)) return "";
+            const abs = (0, __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["toApiUrl"])("/api/files/signature/".concat(user.id));
+            const sep = abs.includes("?") ? "&" : "?";
+            return "".concat(abs).concat(sep, "ts=").concat(signTick);
+        }
+    }["MeClient.useMemo[signatureUrl]"], [
+        user === null || user === void 0 ? void 0 : user.id,
+        signTick
+    ]);
     const [showDrawPad, setShowDrawPad] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "MeClient.useEffect": ()=>{
-            if (!loading && !user) router.replace("/login?callbackUrl=/me");
+            if (!loading && !user) router.replace("/auth/login?callbackUrl=/me");
         }
     }["MeClient.useEffect"], [
         loading,
@@ -642,7 +663,7 @@ function MeClient() {
                     if (!(user === null || user === void 0 ? void 0 : user.id)) return;
                     try {
                         var _u_primaryUserDept, _u_organization, _u_organization1, _u_role;
-                        const res = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["apiFetch"])("/api/users/".concat(user.id));
+                        const res = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["apiFetch"])("/api/users/".concat(user.id));
                         const u = (res === null || res === void 0 ? void 0 : res.data) || {};
                         if (stop) return;
                         setForm({
@@ -717,7 +738,7 @@ function MeClient() {
         e.preventDefault();
         setBusy(true);
         try {
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["apiFetch"])("/api/users/me", {
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["apiFetch"])("/api/users/me", {
                 method: "PATCH",
                 body: {
                     name: form.name,
@@ -767,7 +788,7 @@ function MeClient() {
         try {
             const fd = new FormData();
             fd.append(field, file);
-            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["apiFetch"])(url, {
+            await (0, __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["apiFetch"])(url, {
                 method: "POST",
                 body: fd
             });
@@ -823,7 +844,7 @@ function MeClient() {
                     children: "โปรไฟล์ของฉัน"
                 }, void 0, false, {
                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                    lineNumber: 219,
+                    lineNumber: 230,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -831,7 +852,7 @@ function MeClient() {
                     children: "แก้ไขชื่อที่แสดง อัปโหลดรูปโปรไฟล์/ลายเซ็น และดูข้อมูลบัญชีของคุณ"
                 }, void 0, false, {
                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                    lineNumber: 220,
+                    lineNumber: 231,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -851,7 +872,7 @@ function MeClient() {
                                         referrerPolicy: "no-referrer"
                                     }, avatarUrl, false, {
                                         fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                        lineNumber: 228,
+                                        lineNumber: 239,
                                         columnNumber: 17
                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
                                         viewBox: "0 0 24 24",
@@ -862,17 +883,17 @@ function MeClient() {
                                             d: "M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z"
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 239,
+                                            lineNumber: 250,
                                             columnNumber: 19
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                        lineNumber: 238,
+                                        lineNumber: 249,
                                         columnNumber: 17
                                     }, this)
                                 }, void 0, false, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 226,
+                                    lineNumber: 237,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -891,7 +912,7 @@ function MeClient() {
                                                     }
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                                    lineNumber: 245,
+                                                    lineNumber: 256,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -899,13 +920,13 @@ function MeClient() {
                                                     children: "เลือกรูปโปรไฟล์…"
                                                 }, void 0, false, {
                                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                                    lineNumber: 246,
+                                                    lineNumber: 257,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 244,
+                                            lineNumber: 255,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -913,19 +934,19 @@ function MeClient() {
                                             children: "PNG/JPG/WEBP ≤ 2MB"
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 248,
+                                            lineNumber: 259,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 243,
+                                    lineNumber: 254,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                            lineNumber: 225,
+                            lineNumber: 236,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(SignatureSection, {
@@ -940,13 +961,13 @@ function MeClient() {
                             reload: reload
                         }, void 0, false, {
                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                            lineNumber: 252,
+                            lineNumber: 263,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                    lineNumber: 223,
+                    lineNumber: 234,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -961,7 +982,7 @@ function MeClient() {
                                     children: "องค์กร (Organization)"
                                 }, void 0, false, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 268,
+                                    lineNumber: 279,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -970,13 +991,13 @@ function MeClient() {
                                     className: "w-full rounded-md border border-neutral-200 bg-neutral-100 px-3 py-2 text-sm text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300"
                                 }, void 0, false, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 269,
+                                    lineNumber: 280,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                            lineNumber: 267,
+                            lineNumber: 278,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -987,7 +1008,7 @@ function MeClient() {
                                     children: "อีเมล (แก้ไขโดยผู้ดูแล)"
                                 }, void 0, false, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 276,
+                                    lineNumber: 287,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -996,13 +1017,13 @@ function MeClient() {
                                     className: "w-full rounded-md border border-neutral-300 bg-neutral-100 px-3 py-2 text-sm opacity-90 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400"
                                 }, void 0, false, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 277,
+                                    lineNumber: 288,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                            lineNumber: 275,
+                            lineNumber: 286,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1014,7 +1035,7 @@ function MeClient() {
                                     children: "ชื่อที่แสดง (ชื่อเล่น)"
                                 }, void 0, false, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 284,
+                                    lineNumber: 295,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1028,13 +1049,13 @@ function MeClient() {
                                     placeholder: "เช่น โอ๋, Beam, ฯลฯ"
                                 }, void 0, false, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 285,
+                                    lineNumber: 296,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                            lineNumber: 283,
+                            lineNumber: 294,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1048,7 +1069,7 @@ function MeClient() {
                                             children: "ชื่อ (ไทย)"
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 294,
+                                            lineNumber: 305,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1060,13 +1081,13 @@ function MeClient() {
                                             className: "w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 295,
+                                            lineNumber: 306,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 293,
+                                    lineNumber: 304,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1077,7 +1098,7 @@ function MeClient() {
                                             children: "นามสกุล (ไทย)"
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 301,
+                                            lineNumber: 312,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1089,19 +1110,19 @@ function MeClient() {
                                             className: "w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 302,
+                                            lineNumber: 313,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 300,
+                                    lineNumber: 311,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                            lineNumber: 292,
+                            lineNumber: 303,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1115,7 +1136,7 @@ function MeClient() {
                                             children: "ชื่อ (อังกฤษ)"
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 311,
+                                            lineNumber: 322,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1127,13 +1148,13 @@ function MeClient() {
                                             className: "w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 312,
+                                            lineNumber: 323,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 310,
+                                    lineNumber: 321,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1144,7 +1165,7 @@ function MeClient() {
                                             children: "นามสกุล (อังกฤษ)"
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 318,
+                                            lineNumber: 329,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1156,19 +1177,19 @@ function MeClient() {
                                             className: "w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 319,
+                                            lineNumber: 330,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 317,
+                                    lineNumber: 328,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                            lineNumber: 309,
+                            lineNumber: 320,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1181,7 +1202,7 @@ function MeClient() {
                                     children: "เปลี่ยนรหัสผ่าน"
                                 }, void 0, false, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 327,
+                                    lineNumber: 338,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$stateful$2d$button$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -1192,19 +1213,19 @@ function MeClient() {
                                     children: "บันทึกการเปลี่ยนแปลง"
                                 }, void 0, false, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 328,
+                                    lineNumber: 339,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                            lineNumber: 326,
+                            lineNumber: 337,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                    lineNumber: 266,
+                    lineNumber: 277,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1218,7 +1239,7 @@ function MeClient() {
                                     children: "ข้อมูลพนักงาน (อ่านอย่างเดียว)"
                                 }, void 0, false, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 337,
+                                    lineNumber: 348,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(ReadonlyRow, {
@@ -1226,7 +1247,7 @@ function MeClient() {
                                     value: readonly.employeeCode
                                 }, void 0, false, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 339,
+                                    lineNumber: 350,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(ReadonlyRow, {
@@ -1234,7 +1255,7 @@ function MeClient() {
                                     value: readonly.employeeType
                                 }, void 0, false, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 340,
+                                    lineNumber: 351,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(ReadonlyRow, {
@@ -1242,7 +1263,7 @@ function MeClient() {
                                     value: readonly.contractType
                                 }, void 0, false, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 341,
+                                    lineNumber: 352,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(ReadonlyRow, {
@@ -1250,7 +1271,7 @@ function MeClient() {
                                     value: readonly.gender
                                 }, void 0, false, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 342,
+                                    lineNumber: 353,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1261,7 +1282,7 @@ function MeClient() {
                                             value: readonly.birthDate
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 345,
+                                            lineNumber: 356,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(ReadonlyRow, {
@@ -1269,7 +1290,7 @@ function MeClient() {
                                             value: readonly.startDate
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 346,
+                                            lineNumber: 357,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(ReadonlyRow, {
@@ -1277,7 +1298,7 @@ function MeClient() {
                                             value: readonly.probationEndDate
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 347,
+                                            lineNumber: 358,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(ReadonlyRow, {
@@ -1285,19 +1306,19 @@ function MeClient() {
                                             value: readonly.resignedAt
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 348,
+                                            lineNumber: 359,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 344,
+                                    lineNumber: 355,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                            lineNumber: 336,
+                            lineNumber: 347,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$background$2d$gradient$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["BackgroundGradient"], {
@@ -1308,7 +1329,7 @@ function MeClient() {
                                     children: "สิทธิ์และสังกัด (อ่านอย่างเดียว)"
                                 }, void 0, false, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 353,
+                                    lineNumber: 364,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(ReadonlyRow, {
@@ -1316,7 +1337,7 @@ function MeClient() {
                                     value: readonly.roleName
                                 }, void 0, false, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 355,
+                                    lineNumber: 366,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1327,7 +1348,7 @@ function MeClient() {
                                             children: "Primary Department"
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 358,
+                                            lineNumber: 369,
                                             columnNumber: 15
                                         }, this),
                                         hasPrimary ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1342,7 +1363,7 @@ function MeClient() {
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                                    lineNumber: 361,
+                                                    lineNumber: 372,
                                                     columnNumber: 19
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1353,26 +1374,26 @@ function MeClient() {
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                                    lineNumber: 362,
+                                                    lineNumber: 373,
                                                     columnNumber: 19
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 360,
+                                            lineNumber: 371,
                                             columnNumber: 17
                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "text-sm text-neutral-500",
                                             children: "-"
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 368,
+                                            lineNumber: 379,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 357,
+                                    lineNumber: 368,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1383,7 +1404,7 @@ function MeClient() {
                                             children: "Other Active Departments"
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 373,
+                                            lineNumber: 384,
                                             columnNumber: 15
                                         }, this),
                                         ((_readonly_otherDepts = readonly.otherDepts) === null || _readonly_otherDepts === void 0 ? void 0 : _readonly_otherDepts.length) ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1400,7 +1421,7 @@ function MeClient() {
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                                            lineNumber: 378,
+                                                            lineNumber: 389,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1411,43 +1432,43 @@ function MeClient() {
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                                            lineNumber: 379,
+                                                            lineNumber: 390,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, d.id, true, {
                                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                                    lineNumber: 377,
+                                                    lineNumber: 388,
                                                     columnNumber: 21
                                                 }, this))
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 375,
+                                            lineNumber: 386,
                                             columnNumber: 17
                                         }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                             className: "text-sm text-neutral-500",
                                             children: "-"
                                         }, void 0, false, {
                                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                            lineNumber: 386,
+                                            lineNumber: 397,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                    lineNumber: 372,
+                                    lineNumber: 383,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/(protected)/me/meClient.jsx",
-                            lineNumber: 352,
+                            lineNumber: 363,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                    lineNumber: 335,
+                    lineNumber: 346,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$modal$2f$NoticeDialog$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -1460,7 +1481,7 @@ function MeClient() {
                     message: notice.message
                 }, void 0, false, {
                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                    lineNumber: 392,
+                    lineNumber: 403,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(ChangePasswordDialog, {
@@ -1468,25 +1489,25 @@ function MeClient() {
                     onClose: ()=>setShowChangePass(false)
                 }, void 0, false, {
                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                    lineNumber: 393,
+                    lineNumber: 404,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/app/(protected)/me/meClient.jsx",
-            lineNumber: 218,
+            lineNumber: 229,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/app/(protected)/me/meClient.jsx",
-        lineNumber: 217,
+        lineNumber: 228,
         columnNumber: 5
     }, this);
 }
-_s(MeClient, "ykUPtpnmV60frIbFmWgXY3g1LDI=", false, function() {
+_s(MeClient, "hC3uaTPPy/6A+oFM85GKMCx9q84=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"],
-        __TURBOPACK__imported__module__$5b$project$5d2f$domains$2f$auth$2f$hooks$2f$useAuth$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"]
+        __TURBOPACK__imported__module__$5b$project$5d2f$hooks$2f$useAuth$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"]
     ];
 });
 _c = MeClient;
@@ -1512,19 +1533,19 @@ _c = MeClient;
                     referrerPolicy: "no-referrer"
                 }, signatureUrl, false, {
                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                    lineNumber: 420,
+                    lineNumber: 431,
                     columnNumber: 11
                 }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "px-2 text-xs text-neutral-500",
                     children: "ยังไม่มีลายเซ็น"
                 }, void 0, false, {
                     fileName: "[project]/app/(protected)/me/meClient.jsx",
-                    lineNumber: 430,
+                    lineNumber: 441,
                     columnNumber: 11
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/(protected)/me/meClient.jsx",
-                lineNumber: 418,
+                lineNumber: 429,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1543,7 +1564,7 @@ _c = MeClient;
                                 }
                             }, void 0, false, {
                                 fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                lineNumber: 437,
+                                lineNumber: 448,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1551,13 +1572,13 @@ _c = MeClient;
                                 children: "อัปโหลดจากไฟล์…"
                             }, void 0, false, {
                                 fileName: "[project]/app/(protected)/me/meClient.jsx",
-                                lineNumber: 438,
+                                lineNumber: 449,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/(protected)/me/meClient.jsx",
-                        lineNumber: 436,
+                        lineNumber: 447,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1569,7 +1590,7 @@ _c = MeClient;
                         children: showDrawPad ? "ซ่อนพื้นที่วาด" : "วาดลายเซ็น"
                     }, void 0, false, {
                         fileName: "[project]/app/(protected)/me/meClient.jsx",
-                        lineNumber: 443,
+                        lineNumber: 454,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1577,13 +1598,13 @@ _c = MeClient;
                         children: "แนะนำ PNG พื้นโปร่งใส ≤ 1MB"
                     }, void 0, false, {
                         fileName: "[project]/app/(protected)/me/meClient.jsx",
-                        lineNumber: 452,
+                        lineNumber: 463,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/(protected)/me/meClient.jsx",
-                lineNumber: 435,
+                lineNumber: 446,
                 columnNumber: 7
             }, this),
             showDrawPad && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1595,7 +1616,7 @@ _c = MeClient;
                         children: "วาดด้วยเมาส์/ปากกา จากนั้นกดปุ่ม “บันทึก”"
                     }, void 0, false, {
                         fileName: "[project]/app/(protected)/me/meClient.jsx",
-                        lineNumber: 458,
+                        lineNumber: 469,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$SignaturePad$2e$jsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -1616,7 +1637,7 @@ _c = MeClient;
                                 }
                                 const fd = new FormData();
                                 fd.append("signature", blob, "signature.png");
-                                await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$api$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["apiFetch"])("/api/files/signature", {
+                                await (0, __TURBOPACK__imported__module__$5b$project$5d2f$api$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["apiFetch"])("/api/files/signature", {
                                     method: "POST",
                                     body: fd
                                 });
@@ -1639,24 +1660,24 @@ _c = MeClient;
                         }
                     }, void 0, false, {
                         fileName: "[project]/app/(protected)/me/meClient.jsx",
-                        lineNumber: 459,
+                        lineNumber: 470,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/(protected)/me/meClient.jsx",
-                lineNumber: 457,
+                lineNumber: 468,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/(protected)/me/meClient.jsx",
-        lineNumber: 416,
+        lineNumber: 427,
         columnNumber: 5
     }, this);
 }
 _c1 = SignatureSection;
-/** ---------------- Readonly row (เพิ่มให้ครบ) ---------------- */ function ReadonlyRow(param) {
+/** ---------------- Readonly row ---------------- */ function ReadonlyRow(param) {
     let { label, value } = param;
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: "space-y-1",
@@ -1666,7 +1687,7 @@ _c1 = SignatureSection;
                 children: label
             }, void 0, false, {
                 fileName: "[project]/app/(protected)/me/meClient.jsx",
-                lineNumber: 493,
+                lineNumber: 504,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1675,13 +1696,13 @@ _c1 = SignatureSection;
                 className: "w-full rounded-md border border-neutral-200 bg-neutral-100 px-3 py-2 text-sm text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300"
             }, void 0, false, {
                 fileName: "[project]/app/(protected)/me/meClient.jsx",
-                lineNumber: 494,
+                lineNumber: 505,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/(protected)/me/meClient.jsx",
-        lineNumber: 492,
+        lineNumber: 503,
         columnNumber: 5
     }, this);
 }

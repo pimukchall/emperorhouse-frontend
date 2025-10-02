@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import RolesTable from "@/domains/roles/components/RolesTable";
-import RoleFormDialog from "@/domains/roles/components/RoleFormDialog";
+import RolesTable from "@/components/admin/roles/RolesTable";
+import RoleFormDialog from "@/components/admin/roles/RoleFormDialog";
 import ConfirmDialog from "@/components/modal/ConfirmDialog";
 import NoticeDialog from "@/components/modal/NoticeDialog";
-import { listRoles, createRole, updateRole, deleteRole } from "@/domains/roles/api/roles";
+import { listRoles, createRole, updateRole, deleteRole } from "@/lib/roles";
 
 export default function AdminRolesPage() {
   const [q, setQ] = useState("");

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/api";
 import { canAccess } from "@/access/check";
 
 export default function Guard({ children, fallback = null }) {

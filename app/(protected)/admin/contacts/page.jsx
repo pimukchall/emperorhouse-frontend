@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/api";
 import ErrorDialog from "@/components/modal/ErrorDialog";
 import StatefulButton from "@/components/ui/stateful-button";
-import { useAuth, hasRole } from "@/domains/auth/hooks/useAuth";
+import { useAuth, hasRole } from "@/hooks/useAuth";
 
 const PAGE_SIZE = 20;
 

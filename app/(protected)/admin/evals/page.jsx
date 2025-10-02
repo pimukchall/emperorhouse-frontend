@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/api";
 import Link from "next/link";
 
 export default function AdminAllEvalsPage() {

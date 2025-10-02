@@ -8,7 +8,7 @@ import AvatarButton from "./AvatarButton";
 import { Button } from "@/components/ui/button";
 import StatefulButton from "@/components/ui/stateful-button";
 import ThemeToggle from "@/components/ui/ThemeToggle";
-import { useAuth } from "@/domains/auth/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { BASE_LINKS, visibleCategories } from "@/config/routes";
 import { ChevronDown } from "lucide-react";
 import { MobileNavItem } from "./NavItem";

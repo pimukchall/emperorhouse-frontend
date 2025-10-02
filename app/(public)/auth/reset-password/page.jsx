@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import ResetPasswordDialog from "@/domains/auth/components/ResetPasswordDialog";
+import ResetPasswordDialog from "@/components/auth/dialogs/ResetPasswordDialog";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -13,7 +13,9 @@ export default function ResetPasswordPage() {
       <ResetPasswordDialog
         open={true}
         token={token}
-        onClose={() => router.replace("/auth/login")}
+        onOpenChange={(v) => {
+          if (!v) router.replace("/auth/login");
+        }}
       />
     </div>
   );

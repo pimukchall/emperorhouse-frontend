@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import ForgotPasswordDialog from "@/domains/auth/components/ForgotPasswordDialog";
+import ForgotPasswordDialog from "@/components/auth/dialogs/ForgotPasswordDialog";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -9,7 +9,9 @@ export default function ForgotPasswordPage() {
     <div className="min-h-[40vh]">
       <ForgotPasswordDialog
         open={true}
-        onClose={() => router.replace("/auth/login")}
+        onOpenChange={(v) => {
+          if (!v) router.replace("/auth/login");
+        }}
       />
     </div>
   );

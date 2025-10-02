@@ -1,5 +1,5 @@
 "use client";
-import { gradeFromScore } from "@/lib/grades";
+import { gradeFromScore } from "@/features/evals/utils/grades";
 
 export default function EvalScoreBadge({ total }) {
   const { grade, color } = gradeFromScore(total);

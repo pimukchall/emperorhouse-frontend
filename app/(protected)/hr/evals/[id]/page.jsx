@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/api";
 import { useParams, useRouter } from "next/navigation";
 
 const S1 = [

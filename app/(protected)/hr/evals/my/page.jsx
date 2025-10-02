@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/api";
 
 const STAGE_LABEL_TH = { MID_YEAR: "กลางปี", YEAR_END: "ปลายปี" };
 

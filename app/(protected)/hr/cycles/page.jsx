@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/api";
 
 // mapping ชื่อรอบ
 const STAGE_LABEL_TH = { MID_YEAR: "กลางปี", YEAR_END: "ปลายปี" };

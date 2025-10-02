@@ -1,12 +1,12 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
-import { apiFetch } from "@/lib/api";
-import { useAuth, hasRole } from "@/domains/auth/hooks/useAuth";
+import { apiFetch } from "@/api";
+import { useAuth, hasRole } from "@/hooks/useAuth";
 
-import FiltersBar from "./components/FiltersBar";
-import UserForm from "./components/UserForm";
-import UsersTable from "./components/UsersTable";
-import ManageUserDepartmentsDialog from "./ManageUserDepartmentsDialog";
+import FiltersBar from "../../../../components/admin/users/FiltersBar";
+import UserForm from "../../../../components/admin/users/UserForm";
+import UsersTable from "../../../../components/admin/users/UsersTable";
+import ManageUserDepartmentsDialog from "../../../../components/admin/users/ManageUserDepartmentsDialog";
 
 const PAGE_SIZE = 20;
 

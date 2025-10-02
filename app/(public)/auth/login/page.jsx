@@ -1,6 +1,4 @@
-"use client";
-
-import LoginClient from "@/domains/auth/components/LoginClient";
+import LoginClient from "@/components/auth/LoginClient";
 
 export default function LoginPage() {
   return <LoginClient />;

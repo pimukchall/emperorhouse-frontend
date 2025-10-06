@@ -1,6 +1,7 @@
+// api/auth.js
 import { api, configureApi } from "./index.js";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
 const REFRESH_URL = `${API_BASE}/api/auth/refresh`;
 const LOGIN_URL = `${API_BASE}/api/auth/login`;
 const LOGOUT_URL = `${API_BASE}/api/auth/logout`;
@@ -42,7 +43,7 @@ async function tryRefreshOnce() {
     try {
       const res = await fetch(REFRESH_URL, {
         method: "POST",
-        credentials: "include",
+        credentials: "include", // รับ/ส่ง httpOnly refresh cookie
       });
       if (!res.ok) {
         setAccessToken(null);
@@ -65,14 +66,25 @@ async function tryRefreshOnce() {
 
 /* ---------- Public auth actions ---------- */
 export async function login(payload) {
-  const data = await fetch(LOGIN_URL, {
+  // รับเฉพาะ username + password ให้ตรงกับ backend
+  const body = {
+    username: payload?.username ?? "",
+    password: payload?.password ?? "",
+  };
+
+  const res = await fetch(LOGIN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(payload || {}),
-  }).then((r) => r.json());
+    credentials: "include", // ต้อง include เพื่อรับ refresh cookie
+    body: JSON.stringify(body),
+  });
 
-  if (data?.accessToken) setAccessToken(data.accessToken);
+  const data = await res.json().catch(() => ({}));
+  if (res.ok && data?.accessToken) setAccessToken(data.accessToken);
+  else if (!res.ok) {
+    // เคลียร์ token กรณี login fail
+    setAccessToken(null);
+  }
   return data;
 }
 
@@ -86,8 +98,14 @@ export async function logout() {
 export const me = () => api.get("/api/auth/me");
 export const changePassword = (body) => api.post("/api/auth/change-password", body);
 
-export async function forgotPassword(email) {
-  return api.post("/api/auth/forgot", { email });
+// รองรับทั้ง email หรือ username -> map เป็น emailOrUsername ให้ backend ใช้ตัวเดียว
+export async function forgotPassword(input) {
+  const emailOrUsername =
+    typeof input === "string"
+      ? input
+      : input?.email || input?.username || "";
+
+  return api.post("/api/auth/forgot", { emailOrUsername });
 }
 
 export async function resetPassword(token, newPassword) {

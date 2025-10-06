@@ -1,4 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+// api/index.js
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
 const REFRESH_PATH = "/api/auth/refresh";
 
 let _getAccessToken = null;      // async () => string|null
@@ -13,7 +14,7 @@ export function configureApi({ getAccessToken, onUnauthorized, fetchImpl } = {})
 
 export function toApiUrl(pathOrUrl, absolute = false) {
   if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
-  return absolute ? `${API_BASE}${pathOrUrl}` : `${API_BASE}${pathOrUrl}`; // base เดียวกัน
+  return absolute ? `${API_BASE}${pathOrUrl}` : `${API_BASE}${pathOrUrl}`;
 }
 
 async function parseResponse(res) {
@@ -48,18 +49,31 @@ export async function apiFetch(pathOrUrl, init = {}, opts = {}) {
   const isRefreshCall = url.includes(REFRESH_PATH);
 
   const headers = new Headers(init.headers || {});
+
+  // แนบ Bearer ถ้ามี
   if (_getAccessToken) {
     try {
       const token = await _getAccessToken();
       if (token && !headers.has("Authorization")) {
         headers.set("Authorization", `Bearer ${token}`);
       }
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
-  if (!headers.has("Content-Type") && init.body && !(init.body instanceof FormData)) {
-    headers.set("Content-Type", "application/json");
+
+  // ✅ จัดการ body ให้ถูกต้อง
+  let body = init.body;
+  if (body != null) {
+    // ถ้าเป็น FormData → ปล่อยผ่าน (อย่าตั้ง Content-Type เอง)
+    if (body instanceof FormData) {
+      // no-op
+    } else if (typeof body === "object") {
+      // ถ้าเป็น plain object → stringify เป็น JSON
+      if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+      body = JSON.stringify(body);
+    } else if (typeof body === "string") {
+      // เป็นสตริงอยู่แล้ว → เติม Content-Type ถ้ายังไม่มี
+      if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+    }
   }
 
   const req = {
@@ -67,6 +81,7 @@ export async function apiFetch(pathOrUrl, init = {}, opts = {}) {
     credentials: init.credentials || "include", // สำคัญสำหรับ refresh-cookie
     ...init,
     headers,
+    body, // ใช้ตัวที่ถูกแปลงแล้ว
   };
 
   let res = await _fetch(url, req);
@@ -110,19 +125,19 @@ export const api = {
   post: (p, body, init, opts) =>
     apiFetch(
       p,
-      { ...(init || {}), method: "POST", body: body instanceof FormData ? body : JSON.stringify(body || {}) },
+      { ...(init || {}), method: "POST", body: body instanceof FormData ? body : (body ?? {}) },
       opts
     ),
   put: (p, body, init, opts) =>
     apiFetch(
       p,
-      { ...(init || {}), method: "PUT", body: body instanceof FormData ? body : JSON.stringify(body || {}) },
+      { ...(init || {}), method: "PUT", body: body instanceof FormData ? body : (body ?? {}) },
       opts
     ),
   patch: (p, body, init, opts) =>
     apiFetch(
       p,
-      { ...(init || {}), method: "PATCH", body: body instanceof FormData ? body : JSON.stringify(body || {}) },
+      { ...(init || {}), method: "PATCH", body: body instanceof FormData ? body : (body ?? {}) },
       opts
     ),
   delete: (p, init, opts) => apiFetch(p, { ...(init || {}), method: "DELETE" }, opts),

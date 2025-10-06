@@ -20,12 +20,12 @@ export default function ResetPasswordDialog({ open, onOpenChange, token }) {
 
   async function onSubmit(e) {
     e?.preventDefault();
-    if (!password || password.length < 8)
-      return setError("รหัสผ่านอย่างน้อย 8 ตัว");
+    if (!password || password.length < 8) return setError("รหัสผ่านอย่างน้อย 8 ตัว");
     setBusy(true);
     setError("");
     try {
-      await resetPassword({ code: token, newPassword: password });
+      // ✅ ให้ตรงกับ api/auth.js -> resetPassword(token, newPassword)
+      await resetPassword(token, password);
       onOpenChange?.(false);
     } catch (e) {
       setError(e?.data?.error || e?.message || "รีเซ็ตไม่สำเร็จ");

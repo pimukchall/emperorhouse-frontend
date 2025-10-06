@@ -18,7 +18,6 @@ import {
 
 function safeCallbackUrl(sp) {
   const raw = sp.get("callbackUrl") || "/";
-  // อนุญาตเฉพาะ path ภายในระบบเพื่อกัน open-redirect
   return raw.startsWith("/") ? raw : "/";
 }
 
@@ -29,42 +28,38 @@ export default function LoginClient() {
 
   const { isReady, isAuthenticated, signIn } = useAuth();
 
-  const [email, setEmail] = useState("");
+  // ✅ ใช้ username ตามสเปก backend
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
-
-  // notice (ข้อความแจ้งผลแบบง่าย)
   const [notice, setNotice] = useState({ type: "info", text: "" });
 
   // forgot password dialog
   const [showForgot, setShowForgot] = useState(false);
   const [forgotBusy, setForgotBusy] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState("");
+  // ✅ เปิดให้ใส่ได้ทั้งอีเมล “หรือ” ชื่อผู้ใช้
+  const [identifier, setIdentifier] = useState("");
 
-  // ถ้า login แล้ว ให้เด้งออกจากหน้านี้
   useEffect(() => {
     if (isReady && isAuthenticated) router.replace(callbackUrl);
   }, [isReady, isAuthenticated, router, callbackUrl]);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!email || !password) return;
+    if (!username || !password) return;
     setBusy(true);
     setNotice({ type: "info", text: "" });
     try {
-      const ok = await signIn(email, password, { remember });
-      if (ok) {
+      const res = await signIn(username, password, { remember });
+      if (res?.ok) {
         setNotice({ type: "success", text: "เข้าสู่ระบบสำเร็จ" });
         router.replace(callbackUrl);
       } else {
-        setNotice({ type: "error", text: "เข้าสู่ระบบไม่สำเร็จ" });
+        setNotice({ type: "error", text: res?.message || "เข้าสู่ระบบไม่สำเร็จ" });
       }
     } catch (err) {
-      setNotice({
-        type: "error",
-        text: err?.message || "เข้าสู่ระบบไม่สำเร็จ",
-      });
+      setNotice({ type: "error", text: err?.message || "เข้าสู่ระบบไม่สำเร็จ" });
     } finally {
       setBusy(false);
     }
@@ -72,14 +67,14 @@ export default function LoginClient() {
 
   async function handleForgotSubmit(e) {
     e.preventDefault();
-    if (!forgotEmail) return;
+    if (!identifier) return;
     setForgotBusy(true);
     try {
-      await forgotPassword(forgotEmail);
+      await forgotPassword(identifier); // api ฝั่งเรา map เป็น { emailOrUsername }
       setShowForgot(false);
-      setNotice({ type: "success", text: "ส่งลิงก์รีเซ็ตรหัสไปที่อีเมลแล้ว" });
+      setNotice({ type: "success", text: "ถ้ามีบัญชี ระบบได้ส่งลิงก์รีเซ็ตรหัสแล้ว" });
     } catch (err) {
-      setNotice({ type: "error", text: err?.message || "ส่งอีเมลไม่สำเร็จ" });
+      setNotice({ type: "error", text: err?.message || "ส่งคำขอไม่สำเร็จ" });
     } finally {
       setForgotBusy(false);
     }
@@ -90,21 +85,21 @@ export default function LoginClient() {
       <header>
         <h2 className="text-xl font-bold">เข้าสู่ระบบ</h2>
         <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-          ลงชื่อเข้าใช้ด้วยอีเมลและรหัสผ่านของคุณ
+          ลงชื่อเข้าใช้ด้วยชื่อผู้ใช้และรหัสผ่านของคุณ
         </p>
       </header>
 
       <form className="space-y-4" onSubmit={handleSubmit} autoComplete="on">
         <div className="space-y-1">
-          <Label htmlFor="email">อีเมล</Label>
+          <Label htmlFor="username">ชื่อผู้ใช้</Label>
           <Input
-            id="email"
-            type="email"
-            autoComplete="email"
+            id="username"
+            type="text"
+            autoComplete="username"
             required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="your-username"
             disabled={busy}
           />
         </div>
@@ -139,7 +134,7 @@ export default function LoginClient() {
             type="button"
             onClick={() => {
               setNotice({ type: "info", text: "" });
-              setForgotEmail(email);
+              setIdentifier(username);
               setShowForgot(true);
             }}
             className="text-sm underline underline-offset-2 hover:opacity-80 disabled:opacity-50"
@@ -149,12 +144,7 @@ export default function LoginClient() {
           </button>
         </div>
 
-        <Button
-          type="submit"
-          disabled={busy || !email || !password}
-          className="w-full"
-          aria-busy={busy}
-        >
+        <Button type="submit" disabled={busy || !username || !password} className="w-full" aria-busy={busy}>
           {busy ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
         </Button>
 
@@ -193,20 +183,16 @@ export default function LoginClient() {
             <DialogTitle>ลืมรหัสผ่าน</DialogTitle>
           </DialogHeader>
 
-          <form
-            id="forgot-form"
-            onSubmit={handleForgotSubmit}
-            className="space-y-4"
-          >
+          <form id="forgot-form" onSubmit={handleForgotSubmit} className="space-y-4">
             <div className="space-y-1">
-              <Label htmlFor="forgot-email">อีเมล</Label>
+              <Label htmlFor="identifier">อีเมลหรือชื่อผู้ใช้</Label>
               <Input
-                id="forgot-email"
-                type="email"
+                id="identifier"
+                type="text"
                 required
-                value={forgotEmail}
-                onChange={(e) => setForgotEmail(e.target.value)}
-                placeholder="you@example.com"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="you@example.com หรือ your-username"
                 disabled={forgotBusy}
               />
             </div>

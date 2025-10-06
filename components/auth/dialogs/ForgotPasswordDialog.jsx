@@ -13,29 +13,25 @@ import {
 } from "@/components/ui/dialog";
 import { forgotPassword } from "@/api/auth";
 
-export default function ForgotPasswordDialog({
-  open,
-  onOpenChange,
-  defaultEmail = "",
-}) {
-  const [email, setEmail] = useState(defaultEmail);
+export default function ForgotPasswordDialog({ open, onOpenChange, defaultEmail = "" }) {
+  const [identifier, setIdentifier] = useState(defaultEmail); // ✅ อีเมลหรือชื่อผู้ใช้
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (open) {
-      setEmail(defaultEmail || "");
+      setIdentifier(defaultEmail || "");
       setError("");
     }
   }, [open, defaultEmail]);
 
   async function onSubmit(e) {
     e?.preventDefault();
-    if (!email) return setError("กรอกอีเมล");
+    if (!identifier) return setError("กรอกอีเมลหรือชื่อผู้ใช้");
     setBusy(true);
     setError("");
     try {
-      await forgotPassword(email);
+      await forgotPassword(identifier); // map → { emailOrUsername }
       onOpenChange?.(false);
     } catch (e) {
       setError(e?.data?.message || e?.message || "ส่งคำขอไม่สำเร็จ");
@@ -54,13 +50,13 @@ export default function ForgotPasswordDialog({
         <form id="forgot-form" onSubmit={onSubmit} className="space-y-4">
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="space-y-1">
-            <Label htmlFor="forgot-email">อีเมล</Label>
+            <Label htmlFor="identifier">อีเมลหรือชื่อผู้ใช้</Label>
             <Input
-              id="forgot-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              id="identifier"
+              type="text"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="you@example.com หรือ your-username"
             />
           </div>
         </form>
@@ -71,7 +67,7 @@ export default function ForgotPasswordDialog({
               ยกเลิก
             </Button>
           </DialogClose>
-          <Button form="forgot-form" disabled={busy}>
+        <Button form="forgot-form" disabled={busy}>
             {busy ? "กำลังส่ง..." : "ส่งลิงก์รีเซ็ต"}
           </Button>
         </DialogFooter>

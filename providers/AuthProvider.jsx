@@ -5,16 +5,16 @@ import { findRule, isAdmin, userDeptCodes, userRank, LEVEL_RANK } from "@/access
 
 export const AuthCtx = createContext(null);
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
 const REFRESH_URL = `${API_BASE}/api/auth/refresh`;
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isReady, setReady] = useState(false);
   const accessTokenRef = useRef(null);
-
   const refreshRef = useRef(null);
 
+  // --- Refresh (ใช้ cookie httpOnly) ---
   const refreshDirect = useCallback(async () => {
     if (refreshRef.current) return refreshRef.current;
 
@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
       try {
         const res = await fetch(REFRESH_URL, {
           method: "POST",
-          credentials: "include",
+          credentials: "include", // รับ cookie จาก server
         });
         if (!res.ok) {
           accessTokenRef.current = null;
@@ -45,6 +45,7 @@ export function AuthProvider({ children }) {
     return refreshRef.current;
   }, []);
 
+  // --- /me ---
   const fetchMe = useCallback(async () => {
     try {
       const data = await apiFetch("/api/auth/me");
@@ -55,6 +56,7 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  // ให้ api layer รู้วิธีดึง token และทำ auto-refresh เมื่อเจอ 401
   useEffect(() => {
     configureApi({
       getAccessToken: () => accessTokenRef.current,
@@ -62,26 +64,30 @@ export function AuthProvider({ children }) {
     });
   }, [refreshDirect]);
 
+  // --- Bootstrap: ลอง refresh ก่อน แล้วค่อย me ---
   useEffect(() => {
     (async () => {
-      const ok = await fetchMe();
-      if (!ok) await refreshDirect();
+      const ok = await refreshDirect();
+      if (!ok) await fetchMe();
+      else await fetchMe(); // เผื่อกรณี BE ส่ง user ให้หลัง login แบบไม่ต้อง refresh
       setReady(true);
     })();
   }, [fetchMe, refreshDirect]);
 
+  // --- Auth actions ---
   const signIn = useCallback(
-    async (email, password) => {
+    async (username, password) => {
       try {
         const data = await apiFetch("/api/auth/login", {
           method: "POST",
-          body: { email, password },
+          body: { username, password },
+          credentials: "include", // รับ cookie จาก server
         });
         accessTokenRef.current = data?.accessToken || null;
         await fetchMe();
-        return true;
-      } catch {
-        return false;
+        return { ok: true };
+      } catch (e) {
+        return { ok: false, message: e?.message || "Login failed" };
       }
     },
     [fetchMe]
@@ -89,13 +95,14 @@ export function AuthProvider({ children }) {
 
   const signOut = useCallback(async () => {
     try {
-      await apiFetch("/api/auth/logout", { method: "POST" });
+      await apiFetch("/api/auth/logout", { method: "POST", credentials: "include" }); // ✅ เคลียร์ cookie
     } catch {}
     accessTokenRef.current = null;
     setUser(null);
-    return true;
+    return { ok: true };
   }, []);
 
+  // --- RBAC helper ---
   function canVisit(path) {
     if (!user) return false;
     if (isAdmin(user)) return true;

@@ -17,21 +17,22 @@ export default function RegisterDialog({ open, onOpenChange }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  // ✅ เพิ่ม username ให้ตรง backend
   const [form, setForm] = useState({
+    username: "",
     email: "",
     password: "",
-    name: "",
     firstNameTh: "",
     lastNameTh: "",
+    firstNameEn: "",
+    lastNameEn: "",
   });
+
   const canSubmit = useMemo(
-    () =>
-      !!form.email &&
-      !!form.password &&
-      !!form.firstNameTh &&
-      !!form.lastNameTh,
+    () => !!form.username && !!form.password && !!form.firstNameTh && !!form.lastNameTh,
     [form]
   );
+
   const setField = (k, v) => setForm((s) => ({ ...s, [k]: v }));
 
   async function onSubmit(e) {
@@ -43,16 +44,18 @@ export default function RegisterDialog({ open, onOpenChange }) {
       await apiFetch("/api/auth/register", {
         method: "POST",
         body: {
-          email: form.email,
+          username: form.username,
           password: form.password,
-          name: form.name || `${form.firstNameTh} ${form.lastNameTh}`.trim(),
+          email: form.email || undefined,
           firstNameTh: form.firstNameTh,
           lastNameTh: form.lastNameTh,
+          firstNameEn: form.firstNameEn || undefined,
+          lastNameEn: form.lastNameEn || undefined,
         },
       });
       onOpenChange?.(false);
     } catch (err) {
-      setError(err?.data?.error || err?.message || "ลงทะเบียนไม่สำเร็จ");
+      setError(err?.data?.message || err?.message || "ลงทะเบียนไม่สำเร็จ");
     } finally {
       setBusy(false);
     }
@@ -65,28 +68,32 @@ export default function RegisterDialog({ open, onOpenChange }) {
           <DialogTitle>สมัครสมาชิก</DialogTitle>
         </DialogHeader>
 
-        <form
-          id="register-form"
-          onSubmit={onSubmit}
-          className="grid gap-4 sm:grid-cols-2"
-        >
-          {error && (
-            <p className="text-sm text-red-600 sm:col-span-2">{error}</p>
-          )}
+        <form id="register-form" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
+          {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
 
           <div className="space-y-1 sm:col-span-2">
-            <Label htmlFor="email">อีเมล</Label>
+            <Label htmlFor="username">ชื่อผู้ใช้</Label>
+            <Input
+              id="username"
+              value={form.username}
+              onChange={(e) => setField("username", e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-1 sm:col-span-2">
+            <Label htmlFor="email">อีเมล (ถ้ามี)</Label>
             <Input
               id="email"
               type="email"
               value={form.email}
               onChange={(e) => setField("email", e.target.value)}
-              required
+              placeholder="you@example.com"
             />
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="password">รหัสผ่าน</Label>
+            <Label htmlFor="password">รหัสผ่าน (≥ 8)</Label>
             <Input
               id="password"
               type="password"
@@ -94,16 +101,6 @@ export default function RegisterDialog({ open, onOpenChange }) {
               value={form.password}
               onChange={(e) => setField("password", e.target.value)}
               required
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label htmlFor="name">ชื่อที่แสดง (ถ้ามี)</Label>
-            <Input
-              id="name"
-              value={form.name}
-              onChange={(e) => setField("name", e.target.value)}
-              placeholder="ว่างได้ ระบบจะใช้ชื่อ-นามสกุล"
             />
           </div>
 
@@ -124,6 +121,26 @@ export default function RegisterDialog({ open, onOpenChange }) {
               value={form.lastNameTh}
               onChange={(e) => setField("lastNameTh", e.target.value)}
               required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="firstNameEn">First name (EN)</Label>
+            <Input
+              id="firstNameEn"
+              value={form.firstNameEn}
+              onChange={(e) => setField("firstNameEn", e.target.value)}
+              placeholder=""
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="lastNameEn">Last name (EN)</Label>
+            <Input
+              id="lastNameEn"
+              value={form.lastNameEn}
+              onChange={(e) => setField("lastNameEn", e.target.value)}
+              placeholder=""
             />
           </div>
         </form>

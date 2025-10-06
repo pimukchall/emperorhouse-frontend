@@ -36,6 +36,7 @@ export default function ChangePasswordDialog({ open, onOpenChange }) {
 
     setBusy(true);
     try {
+      // ✅ ชื่อฟิลด์ตาม backend: currentPassword, newPassword
       await changePassword({ currentPassword, newPassword });
       resetAll();
       onOpenChange?.(false);

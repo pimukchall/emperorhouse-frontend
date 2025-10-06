@@ -1,8 +1,0 @@
-{
-  "/(protected)/me/page": "app/(protected)/me/page.js",
-  "/(public)/auth/login/page": "app/(public)/auth/login/page.js",
-  "/(public)/auth/register/page": "app/(public)/auth/register/page.js",
-  "/_not-found/page": "app/_not-found/page.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/page": "app/page.js"
-}

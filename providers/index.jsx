@@ -1,7 +1,7 @@
 "use client";
 
 import { ThemeProvider } from "next-themes";
-import { AuthProvider } from "@/providers/AuthProvider";  // ✅ แยกไฟล์ Provider จริง
+import { AuthProvider } from "@/providers/AuthProvider";
 
 export default function Providers({ children }) {
   return (
